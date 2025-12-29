@@ -26,25 +26,25 @@ export default function FilmStrip({ photos }: { photos: Photo[] }) {
   const slots = [...photos, ...Array(5 - photos.length).fill(null)].slice(0, 5)
 
   return (
-    <div className="w-full">
-      <div className="bg-[#2d2926] flex items-stretch w-full shadow-xl">
+    <div className="w-full group/strip">
+      <div className="film-strip flex items-stretch w-full rounded-sm overflow-hidden">
         {/* Left sprocket column */}
-        <div className="w-7 bg-[#1f1c1a] flex flex-col shrink-0">
+        <div className="w-7 film-sprocket flex flex-col shrink-0">
           {slots.map((_, i) => (
             <div key={i} className="flex-1 flex flex-col items-center justify-evenly py-1">
-              <div className="w-4 h-2.5 rounded-sm bg-[#2d2926]" />
-              <div className="w-4 h-2.5 rounded-sm bg-[#2d2926]" />
+              <div className="w-4 h-2.5 rounded-sm bg-[#1a1816]" />
+              <div className="w-4 h-2.5 rounded-sm bg-[#1a1816]" />
             </div>
           ))}
         </div>
 
         {/* Photos */}
-        <div className="flex flex-1 py-2 gap-0.5">
+        <div className="flex flex-1 py-2 gap-0.5 bg-[#1a1816]">
           {slots.map((photo, i) => photo ? (
             <Link
               key={photo.id}
               href={`/photos/${photo.id}`}
-              className="relative w-[20%] bg-[#1f1c1a] group"
+              className="relative w-[20%] bg-[#0f0e0d] group"
               style={{ aspectRatio: '3/2' }}
             >
               <div className="absolute inset-1 overflow-hidden rounded-[1px]">
@@ -52,15 +52,15 @@ export default function FilmStrip({ photos }: { photos: Photo[] }) {
                   src={photo.thumbnailPath}
                   alt=""
                   fill
-                  className="object-cover"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
                   sizes="20vw"
                 />
-                {/* Data back style overlay */}
-                <div className="absolute bottom-0 right-0 left-0 p-1.5 flex justify-between items-end pointer-events-none">
-                  <div className="text-[8px] text-orange-400/80 font-mono tracking-wider drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+                {/* Data back style overlay - yellow for warning aesthetic */}
+                <div className="absolute bottom-0 right-0 left-0 p-1.5 flex justify-between items-end pointer-events-none bg-gradient-to-t from-black/60 to-transparent">
+                  <div className="film-data-overlay">
                     {photo.filmStock?.name || photo.camera?.name || ''}
                   </div>
-                  <div className="text-[8px] text-orange-400/80 font-mono tracking-wider drop-shadow-[0_1px_1px_rgba(0,0,0,0.8)]">
+                  <div className="film-data-overlay">
                     {formatDate(photo.createdAt)}
                   </div>
                 </div>
@@ -73,16 +73,25 @@ export default function FilmStrip({ photos }: { photos: Photo[] }) {
               </div>
             </Link>
           ) : (
-            <div key={`empty-${i}`} className="w-[20%] bg-[#1f1c1a]" style={{ aspectRatio: '3/2' }} />
+            <div
+              key={`empty-${i}`}
+              className="w-[20%] bg-[#0f0e0d] relative"
+              style={{ aspectRatio: '3/2' }}
+            >
+              {/* Empty slot indicator */}
+              <div className="absolute inset-1 border border-dashed border-[#2a2a2a] flex items-center justify-center">
+                <span className="text-[#2a2a2a] text-xs">—</span>
+              </div>
+            </div>
           ))}
         </div>
 
         {/* Right sprocket column */}
-        <div className="w-7 bg-[#1f1c1a] flex flex-col shrink-0">
+        <div className="w-7 film-sprocket flex flex-col shrink-0">
           {slots.map((_, i) => (
             <div key={i} className="flex-1 flex flex-col items-center justify-evenly py-1">
-              <div className="w-4 h-2.5 rounded-sm bg-[#2d2926]" />
-              <div className="w-4 h-2.5 rounded-sm bg-[#2d2926]" />
+              <div className="w-4 h-2.5 rounded-sm bg-[#1a1816]" />
+              <div className="w-4 h-2.5 rounded-sm bg-[#1a1816]" />
             </div>
           ))}
         </div>

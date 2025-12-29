@@ -7,56 +7,45 @@ import Footer from '@/components/Footer'
 export default async function FilmsPage() {
   const filmStocks = await prisma.filmStock.findMany({
     include: {
-      photos: {
-        take: 6,
-        orderBy: { createdAt: 'desc' }
-      },
+      photos: { take: 4, orderBy: { createdAt: 'desc' } },
       _count: { select: { photos: true } }
     },
     orderBy: { name: 'asc' }
   })
 
   return (
-    <div className="min-h-screen bg-[#141414] flex flex-col">
+    <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
       <Header />
 
-      <main className="flex-1 max-w-7xl mx-auto w-full py-12 px-6">
-        <div className="mb-12">
-          <h1 className="text-4xl text-white mb-3">Film Stocks</h1>
-          <p className="text-neutral-400 text-lg">Explore photos shot on different film stocks. Find your next favorite film.</p>
-        </div>
+      <main className="flex-1 max-w-7xl mx-auto w-full py-16 px-6">
+        <h1 className="text-4xl font-black text-white mb-2 tracking-tight">Film Stocks</h1>
+        <p className="text-neutral-500 mb-12">Explore photos by film</p>
 
         {filmStocks.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-5xl mb-4">🎞️</div>
-            <p className="text-neutral-400">No film stocks yet. Upload photos with film stock info to see them here.</p>
+          <div className="text-center py-24 border border-dashed border-neutral-800">
+            <p className="text-neutral-500">No film stocks yet</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filmStocks.map(film => (
               <Link
                 key={film.id}
                 href={`/films/${film.id}`}
-                className="group bg-[#1a1a1a] rounded-xl overflow-hidden border border-neutral-800/50 hover:border-emerald-500/30 transition-all"
+                className="group bg-neutral-900 border border-neutral-800 hover:border-[#D32F2F] transition-colors"
               >
-                <div className="grid grid-cols-3 gap-px aspect-[3/1.2] bg-neutral-800">
-                  {film.photos.slice(0, 6).map(photo => (
-                    <div key={photo.id} className="relative bg-[#1a1a1a]">
-                      <Image src={photo.thumbnailPath} alt="" fill className="object-cover" sizes="200px" />
+                <div className="grid grid-cols-4 gap-px bg-neutral-800">
+                  {film.photos.slice(0, 4).map(photo => (
+                    <div key={photo.id} className="aspect-square relative bg-neutral-900">
+                      <Image src={photo.thumbnailPath} alt="" fill className="object-cover" sizes="100px" />
                     </div>
                   ))}
-                  {Array.from({ length: Math.max(0, 6 - film.photos.length) }).map((_, i) => (
-                    <div key={i} className="bg-[#1a1a1a]" />
+                  {Array.from({ length: Math.max(0, 4 - film.photos.length) }).map((_, i) => (
+                    <div key={i} className="aspect-square bg-neutral-900" />
                   ))}
                 </div>
-                <div className="p-5">
-                  <h3 className="text-lg text-white group-hover:text-emerald-400 transition-colors">
-                    {film.name}
-                  </h3>
-                  <div className="flex items-center justify-between mt-2">
-                    {film.brand && <p className="text-neutral-500 text-sm">{film.brand}</p>}
-                    <span className="text-neutral-600 text-sm">{film._count.photos} photos</span>
-                  </div>
+                <div className="p-4">
+                  <h3 className="text-white font-bold group-hover:text-[#D32F2F] transition-colors">{film.name}</h3>
+                  <p className="text-neutral-500 text-sm">{film._count.photos} photos</p>
                 </div>
               </Link>
             ))}

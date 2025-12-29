@@ -1,9 +1,9 @@
+'use client'
 import Link from 'next/link'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { useSession } from 'next-auth/react'
 
-export default async function Header() {
-  const session = await getServerSession(authOptions)
+export default function ClientHeader() {
+  const { data: session } = useSession()
 
   return (
     <header className="bg-[#0a0a0a]">

@@ -32,9 +32,9 @@ export default function QuickLikeButton({ photoId, initialLiked, initialCount }:
   return (
     <button
       onClick={handleLike}
-      className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-black/80 text-white text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-1 transition-all opacity-0 group-hover:opacity-100 hover:scale-110"
+      className="absolute top-1.5 right-1.5 bg-black/70 hover:bg-black text-white text-[10px] px-2 py-1 flex items-center gap-1 transition-all opacity-0 group-hover:opacity-100"
     >
-      <span className={liked ? 'text-red-500' : ''}>{liked ? '♥' : '♡'}</span>
+      <span className={liked ? 'text-[#D32F2F]' : ''}>{liked ? '♥' : '♡'}</span>
       {count > 0 && <span>{count}</span>}
     </button>
   )

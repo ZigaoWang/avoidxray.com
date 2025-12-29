@@ -82,29 +82,27 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-[#0a0a0a]/80 border-b border-neutral-800/50">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
-          <Link href="/" className="text-xl font-semibold text-white tracking-tight">
-            Film Gallery
-          </Link>
-        </div>
+      <header className="py-5 px-6">
+        <Link href="/" className="inline-flex items-center gap-1">
+          <span className="bg-[#D32F2F] text-white font-black text-sm px-2 py-1 tracking-tight">AVOID</span>
+          <span className="bg-white text-black font-black text-sm px-2 py-1 tracking-tight">X-RAY</span>
+        </Link>
       </header>
 
       <main className="max-w-xl mx-auto py-12 px-6">
         <Link href={`/photos/${photoId}`} className="text-neutral-500 hover:text-white text-sm mb-6 inline-block">
-          ← Back to Photo
+          &larr; Back to Photo
         </Link>
-        <h1 className="text-3xl font-bold text-white mb-8">Edit Photo</h1>
+        <h1 className="text-4xl font-black text-white mb-8 tracking-tight">Edit Photo</h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-neutral-300 mb-2 text-sm">Caption</label>
+            <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2 font-medium">Caption</label>
             <input
               type="text"
               value={caption}
               onChange={e => setCaption(e.target.value)}
-              placeholder="Add a caption..."
-              className="w-full p-3 rounded-lg bg-neutral-800 text-white border border-neutral-700 focus:border-emerald-500 focus:outline-none transition-colors"
+              className="w-full p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none"
             />
           </div>
 
@@ -113,7 +111,7 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
             value={cameraId}
             onChange={setCameraId}
             onCreate={createCamera}
-            placeholder="Search or add camera..."
+            placeholder="Search..."
             label="Camera"
           />
 
@@ -122,7 +120,7 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
             value={filmStockId}
             onChange={setFilmStockId}
             onCreate={createFilmStock}
-            placeholder="Search or add film..."
+            placeholder="Search..."
             label="Film Stock"
           />
 
@@ -130,13 +128,13 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-emerald-600 text-white p-3 rounded-lg font-medium hover:bg-emerald-500 disabled:opacity-50 transition-colors"
+              className="flex-1 bg-[#D32F2F] text-white py-3 text-sm font-bold uppercase tracking-wider hover:bg-[#B71C1C] disabled:opacity-50 transition-colors"
             >
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? 'Saving...' : 'Save'}
             </button>
             <Link
               href={`/photos/${photoId}`}
-              className="flex-1 bg-neutral-800 text-white p-3 rounded-lg font-medium hover:bg-neutral-700 text-center transition-colors"
+              className="flex-1 bg-neutral-800 text-white py-3 text-sm font-bold uppercase tracking-wider hover:bg-neutral-700 text-center transition-colors"
             >
               Cancel
             </Link>

@@ -30,10 +30,10 @@ export default function LikeButton({ photoId, initialLiked, initialCount }: { ph
     <button
       onClick={handleLike}
       className={`flex items-center gap-2 text-sm transition-colors ${
-        liked ? 'text-red-500' : 'text-neutral-500 hover:text-white'
+        liked ? 'text-[#D32F2F]' : 'text-neutral-500 hover:text-white'
       }`}
     >
-      <span>{liked ? '♥' : '♡'}</span>
+      <span className="text-lg">{liked ? '♥' : '♡'}</span>
       <span>{count}</span>
     </button>
   )

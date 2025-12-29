@@ -12,7 +12,6 @@ import LikeButton from '@/components/LikeButton'
 export default async function PhotoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const session = await getServerSession(authOptions)
-
   const userId = session?.user ? (session.user as { id: string }).id : null
 
   const photo = await prisma.photo.findUnique({
@@ -45,57 +44,44 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
       <Header />
 
       <main className="flex-1">
-        {/* Back link */}
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <Link href="/" className="text-xs text-neutral-600 hover:text-white transition-colors uppercase tracking-wider">
-            ← Back
+        <div className="max-w-5xl mx-auto px-6 py-8">
+          <Link href="/" className="text-neutral-500 hover:text-white text-sm mb-6 inline-block">
+            &larr; Back
           </Link>
-        </div>
 
-        {/* Photo */}
-        <div className="max-w-5xl mx-auto px-6 pb-16">
-          <div className="relative aspect-[3/2] w-full bg-neutral-950 mb-8">
-            <Image
-              src={photo.mediumPath}
-              alt={photo.caption || 'Photo'}
-              fill
-              className="object-contain"
-              priority
-            />
+          {/* Photo */}
+          <div className="relative aspect-[3/2] w-full bg-black mb-8">
+            <Image src={photo.mediumPath} alt={photo.caption || ''} fill className="object-contain" priority />
           </div>
 
-          {/* Info row */}
-          <div className="flex items-start justify-between gap-8 border-t border-neutral-900 pt-8">
-            <div className="flex-1 min-w-0">
-              {/* Photographer */}
+          {/* Info */}
+          <div className="flex items-start justify-between gap-8 border-t border-neutral-800 pt-8">
+            <div className="flex-1">
+              {/* Author */}
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-full bg-neutral-800 flex items-center justify-center text-white text-sm">
+                <div className="w-10 h-10 bg-neutral-800 flex items-center justify-center text-white font-bold">
                   {(photo.user.name || photo.user.username).charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="text-white text-sm">{photo.user.name || photo.user.username}</p>
-                  <p className="text-neutral-600 text-xs">@{photo.user.username}</p>
+                  <p className="text-white font-medium">{photo.user.name || photo.user.username}</p>
+                  <p className="text-neutral-500 text-sm">@{photo.user.username}</p>
                 </div>
               </div>
 
-              {/* Caption */}
-              {photo.caption && (
-                <p className="text-neutral-400 text-sm leading-relaxed mb-6">{photo.caption}</p>
-              )}
+              {photo.caption && <p className="text-neutral-300 mb-6">{photo.caption}</p>}
 
-              {/* Details */}
-              <div className="flex flex-wrap gap-x-8 gap-y-2 text-xs">
+              <div className="flex flex-wrap gap-4 text-sm">
                 {photo.camera && (
-                  <Link href={`/cameras/${photo.camera.id}`} className="text-neutral-500 hover:text-white transition-colors">
-                    {photo.camera.brand ? `${photo.camera.brand} ${photo.camera.name}` : photo.camera.name}
+                  <Link href={`/cameras/${photo.camera.id}`} className="text-neutral-500 hover:text-[#D32F2F]">
+                    {photo.camera.name}
                   </Link>
                 )}
                 {photo.filmStock && (
-                  <Link href={`/films/${photo.filmStock.id}`} className="text-neutral-500 hover:text-white transition-colors">
-                    {photo.filmStock.brand ? `${photo.filmStock.brand} ${photo.filmStock.name}` : photo.filmStock.name}
+                  <Link href={`/films/${photo.filmStock.id}`} className="text-neutral-500 hover:text-[#D32F2F]">
+                    {photo.filmStock.name}
                   </Link>
                 )}
-                <span className="text-neutral-700">{photo.createdAt.toLocaleDateString()}</span>
+                <span className="text-neutral-600">{photo.createdAt.toLocaleDateString()}</span>
               </div>
             </div>
 
@@ -104,10 +90,7 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
               <LikeButton photoId={photo.id} initialLiked={!!userLiked} initialCount={photo._count.likes} />
               {isOwner && (
                 <>
-                  <Link
-                    href={`/photos/${photo.id}/edit`}
-                    className="text-xs text-neutral-600 hover:text-white transition-colors uppercase tracking-wider"
-                  >
+                  <Link href={`/photos/${photo.id}/edit`} className="text-neutral-500 hover:text-white text-sm uppercase tracking-wider">
                     Edit
                   </Link>
                   <DeleteButton photoId={photo.id} />
@@ -119,13 +102,13 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
 
         {/* Related */}
         {relatedPhotos.length > 0 && (
-          <section className="border-t border-neutral-900">
-            <div className="max-w-7xl mx-auto px-6 py-16">
-              <h2 className="text-sm text-neutral-500 uppercase tracking-wider mb-8">More like this</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <section className="border-t border-neutral-800 mt-8">
+            <div className="max-w-7xl mx-auto px-6 py-12">
+              <h2 className="text-sm text-neutral-500 uppercase tracking-wider mb-6">More like this</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {relatedPhotos.map(p => (
-                  <Link key={p.id} href={`/photos/${p.id}`} className="relative aspect-[3/2] bg-neutral-950 overflow-hidden">
-                    <Image src={p.thumbnailPath} alt="" fill className="object-cover" sizes="(max-width: 768px) 50vw, 25vw" />
+                  <Link key={p.id} href={`/photos/${p.id}`} className="relative aspect-[3/2] bg-neutral-900">
+                    <Image src={p.thumbnailPath} alt="" fill className="object-cover" sizes="25vw" />
                   </Link>
                 ))}
               </div>

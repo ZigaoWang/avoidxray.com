@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Footer from '@/components/Footer'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -24,44 +23,39 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
-      <header className="border-b border-neutral-900">
-        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-5">
-          <Link href="/" className="text-white text-lg tracking-tight" >
-            Film Gallery
-          </Link>
-        </div>
+      <header className="py-5 px-6">
+        <Link href="/" className="inline-flex items-center gap-1">
+          <span className="bg-[#D32F2F] text-white font-black text-sm px-2 py-1 tracking-tight">AVOID</span>
+          <span className="bg-white text-black font-black text-sm px-2 py-1 tracking-tight">X-RAY</span>
+        </Link>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-6 py-16">
+      <main className="flex-1 flex items-center justify-center px-6">
         <div className="w-full max-w-sm">
-          <div className="text-center mb-12">
-            <h1 className="text-3xl text-white mb-3" >Welcome back</h1>
-            <p className="text-neutral-600 text-sm">Sign in to continue</p>
-          </div>
+          <h1 className="text-4xl font-black text-white mb-2 tracking-tight">Sign In</h1>
+          <p className="text-neutral-500 mb-8">Welcome back</p>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="text-red-500 text-sm text-center">{error}</div>
-            )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && <div className="bg-[#D32F2F] text-white text-sm px-4 py-3">{error}</div>}
 
             <div>
-              <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2">Email</label>
+              <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2 font-medium">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full p-3 bg-transparent text-white border-b border-neutral-800 focus:border-white focus:outline-none transition-colors"
+                className="w-full p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2">Password</label>
+              <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2 font-medium">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full p-3 bg-transparent text-white border-b border-neutral-800 focus:border-white focus:outline-none transition-colors"
+                className="w-full p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none"
                 required
               />
             </div>
@@ -69,20 +63,17 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full text-white border border-neutral-700 py-3 text-sm uppercase tracking-wider hover:bg-white hover:text-black disabled:opacity-50 transition-colors mt-8"
+              className="w-full bg-[#D32F2F] text-white py-3 text-sm font-bold uppercase tracking-wider hover:bg-[#B71C1C] disabled:opacity-50 transition-colors mt-6"
             >
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
 
-          <p className="mt-10 text-center text-neutral-600 text-sm">
-            Don&apos;t have an account?{' '}
-            <Link href="/register" className="text-white hover:underline">Create one</Link>
+          <p className="mt-6 text-neutral-500 text-sm">
+            No account? <Link href="/register" className="text-white hover:text-[#D32F2F]">Create one</Link>
           </p>
         </div>
       </main>
-
-      <Footer />
     </div>
   )
 }
