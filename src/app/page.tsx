@@ -55,7 +55,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
       <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
         {/* Background image grid */}
         {heroPhotos.length > 0 && (
-          <div className="absolute inset-0 grid grid-cols-3 gap-1 opacity-40">
+          <div className="absolute inset-0 grid grid-cols-3 gap-1">
             {heroPhotos.map((photo, idx) => (
               <div key={photo.id} className="relative">
                 <Image
