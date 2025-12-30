@@ -5,16 +5,18 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import Combobox from '@/components/Combobox'
+import TagInput from '@/components/TagInput'
 
 type Camera = { id: string; name: string; brand: string | null }
 type FilmStock = { id: string; name: string; brand: string | null }
-type Photo = { id: string; caption: string | null; cameraId: string | null; filmStockId: string | null }
+type Photo = { id: string; caption: string | null; cameraId: string | null; filmStockId: string | null; tags?: { tag: { name: string } }[] }
 
 export default function EditPhotoPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [photo, setPhoto] = useState<Photo | null>(null)
   const [caption, setCaption] = useState('')
+  const [tags, setTags] = useState<string[]>([])
   const [cameraId, setCameraId] = useState('')
   const [filmStockId, setFilmStockId] = useState('')
   const [newCameraName, setNewCameraName] = useState('')
@@ -35,6 +37,7 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
       setCaption(data.caption || '')
       setCameraId(data.cameraId || '')
       setFilmStockId(data.filmStockId || '')
+      setTags(data.tags?.map((t: { tag: { name: string } }) => t.tag.name) || [])
     })
     fetch('/api/cameras').then(r => r.json()).then(setCameras)
     fetch('/api/filmstocks').then(r => r.json()).then(setFilmStocks)
@@ -83,7 +86,8 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
       body: JSON.stringify({
         caption,
         cameraId: finalCameraId.startsWith('new-') ? null : finalCameraId,
-        filmStockId: finalFilmStockId.startsWith('new-') ? null : finalFilmStockId
+        filmStockId: finalFilmStockId.startsWith('new-') ? null : finalFilmStockId,
+        tags
       })
     })
     router.push(`/photos/${photoId}`)
@@ -157,6 +161,11 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
             placeholder="Search..."
             label="Film Stock"
           />
+
+          <div>
+            <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2 font-medium">Tags</label>
+            <TagInput value={tags} onChange={setTags} />
+          </div>
 
           <div className="flex gap-4 pt-4">
             <button
