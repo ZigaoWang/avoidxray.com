@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import Combobox from '@/components/Combobox'
 import ClientHeader from '@/components/ClientHeader'
 import Footer from '@/components/Footer'
@@ -20,6 +19,8 @@ export default function UploadPage() {
   const [filmStocks, setFilmStocks] = useState<FilmStock[]>([])
   const [cameraId, setCameraId] = useState('')
   const [filmStockId, setFilmStockId] = useState('')
+  const [newCameraName, setNewCameraName] = useState('')
+  const [newFilmName, setNewFilmName] = useState('')
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
@@ -65,11 +66,36 @@ export default function UploadPage() {
     setUploading(true)
     setProgress(0)
 
+    let finalCameraId = cameraId
+    let finalFilmStockId = filmStockId
+
+    // Create camera only on submit if it's new
+    if (newCameraName && !cameraId) {
+      const res = await fetch('/api/cameras', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCameraName })
+      })
+      const camera = await res.json()
+      finalCameraId = camera.id
+    }
+
+    // Create film stock only on submit if it's new
+    if (newFilmName && !filmStockId) {
+      const res = await fetch('/api/filmstocks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newFilmName })
+      })
+      const filmStock = await res.json()
+      finalFilmStockId = filmStock.id
+    }
+
     const formData = new FormData()
     files.forEach(f => formData.append('files', f))
     if (caption) formData.append('caption', caption)
-    if (cameraId) formData.append('cameraId', cameraId)
-    if (filmStockId) formData.append('filmStockId', filmStockId)
+    if (finalCameraId) formData.append('cameraId', finalCameraId)
+    if (finalFilmStockId) formData.append('filmStockId', finalFilmStockId)
 
     const interval = setInterval(() => {
       setProgress(p => Math.min(p + 10, 90))
@@ -81,26 +107,30 @@ export default function UploadPage() {
     router.push('/')
   }
 
-  const createCamera = async (name: string) => {
-    const res = await fetch('/api/cameras', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name })
-    })
-    const camera = await res.json()
-    setCameras(prev => [...prev, camera])
-    return camera
+  const handleCameraCreate = async (name: string) => {
+    setNewCameraName(name)
+    const tempId = `new-${name}`
+    const temp = { id: tempId, name, brand: null }
+    setCameras(prev => [...prev, temp])
+    return temp
   }
 
-  const createFilmStock = async (name: string) => {
-    const res = await fetch('/api/filmstocks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name })
-    })
-    const filmStock = await res.json()
-    setFilmStocks(prev => [...prev, filmStock])
-    return filmStock
+  const handleFilmCreate = async (name: string) => {
+    setNewFilmName(name)
+    const tempId = `new-${name}`
+    const temp = { id: tempId, name, brand: null }
+    setFilmStocks(prev => [...prev, temp])
+    return temp
+  }
+
+  const handleCameraChange = (id: string) => {
+    setCameraId(id)
+    if (!id.startsWith('new-')) setNewCameraName('')
+  }
+
+  const handleFilmChange = (id: string) => {
+    setFilmStockId(id)
+    if (!id.startsWith('new-')) setNewFilmName('')
   }
 
   return (
@@ -171,16 +201,16 @@ export default function UploadPage() {
               <Combobox
                 options={cameras}
                 value={cameraId}
-                onChange={setCameraId}
-                onCreate={createCamera}
+                onChange={handleCameraChange}
+                onCreate={handleCameraCreate}
                 placeholder="Search..."
                 label="Camera"
               />
               <Combobox
                 options={filmStocks}
                 value={filmStockId}
-                onChange={setFilmStockId}
-                onCreate={createFilmStock}
+                onChange={handleFilmChange}
+                onCreate={handleFilmCreate}
                 placeholder="Search..."
                 label="Film Stock"
               />

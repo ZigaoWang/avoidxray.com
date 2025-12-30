@@ -17,6 +17,8 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
   const [caption, setCaption] = useState('')
   const [cameraId, setCameraId] = useState('')
   const [filmStockId, setFilmStockId] = useState('')
+  const [newCameraName, setNewCameraName] = useState('')
+  const [newFilmName, setNewFilmName] = useState('')
   const [cameras, setCameras] = useState<Camera[]>([])
   const [filmStocks, setFilmStocks] = useState<FilmStock[]>([])
   const [saving, setSaving] = useState(false)
@@ -51,34 +53,66 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
+
+    let finalCameraId = cameraId
+    let finalFilmStockId = filmStockId
+
+    if (newCameraName && cameraId.startsWith('new-')) {
+      const res = await fetch('/api/cameras', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newCameraName })
+      })
+      const camera = await res.json()
+      finalCameraId = camera.id
+    }
+
+    if (newFilmName && filmStockId.startsWith('new-')) {
+      const res = await fetch('/api/filmstocks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newFilmName })
+      })
+      const filmStock = await res.json()
+      finalFilmStockId = filmStock.id
+    }
+
     await fetch(`/api/photos/${photoId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ caption, cameraId, filmStockId })
+      body: JSON.stringify({
+        caption,
+        cameraId: finalCameraId.startsWith('new-') ? null : finalCameraId,
+        filmStockId: finalFilmStockId.startsWith('new-') ? null : finalFilmStockId
+      })
     })
     router.push(`/photos/${photoId}`)
   }
 
-  const createCamera = async (name: string) => {
-    const res = await fetch('/api/cameras', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name })
-    })
-    const camera = await res.json()
-    setCameras(prev => [...prev, camera])
-    return camera
+  const handleCameraCreate = async (name: string) => {
+    setNewCameraName(name)
+    const tempId = `new-${name}`
+    const temp = { id: tempId, name, brand: null }
+    setCameras(prev => [...prev, temp])
+    return temp
   }
 
-  const createFilmStock = async (name: string) => {
-    const res = await fetch('/api/filmstocks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name })
-    })
-    const filmStock = await res.json()
-    setFilmStocks(prev => [...prev, filmStock])
-    return filmStock
+  const handleFilmCreate = async (name: string) => {
+    setNewFilmName(name)
+    const tempId = `new-${name}`
+    const temp = { id: tempId, name, brand: null }
+    setFilmStocks(prev => [...prev, temp])
+    return temp
+  }
+
+  const handleCameraChange = (id: string) => {
+    setCameraId(id)
+    if (!id.startsWith('new-')) setNewCameraName('')
+  }
+
+  const handleFilmChange = (id: string) => {
+    setFilmStockId(id)
+    if (!id.startsWith('new-')) setNewFilmName('')
   }
 
   return (
@@ -107,8 +141,8 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
           <Combobox
             options={cameras}
             value={cameraId}
-            onChange={setCameraId}
-            onCreate={createCamera}
+            onChange={handleCameraChange}
+            onCreate={handleCameraCreate}
             placeholder="Search..."
             label="Camera"
           />
@@ -116,8 +150,8 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
           <Combobox
             options={filmStocks}
             value={filmStockId}
-            onChange={setFilmStockId}
-            onCreate={createFilmStock}
+            onChange={handleFilmChange}
+            onCreate={handleFilmCreate}
             placeholder="Search..."
             label="Film Stock"
           />
