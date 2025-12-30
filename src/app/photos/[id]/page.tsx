@@ -12,6 +12,8 @@ import ColorPalette from '@/components/ColorPalette'
 import { Vibrant } from 'node-vibrant/node'
 import path from 'path'
 
+import { stat } from 'fs/promises'
+
 async function extractColors(imagePath: string) {
   try {
     const fullPath = path.join(process.cwd(), 'public', imagePath)
@@ -57,6 +59,15 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
 
   const isOwner = userId === photo.userId
   const colorPalette = await extractColors(photo.mediumPath)
+
+  // Get file size
+  let fileSize = ''
+  try {
+    const filePath = path.join(process.cwd(), 'public', photo.originalPath)
+    const stats = await stat(filePath)
+    const mb = stats.size / (1024 * 1024)
+    fileSize = mb >= 1 ? `${mb.toFixed(1)} MB` : `${(stats.size / 1024).toFixed(0)} KB`
+  } catch {}
 
   const relatedPhotos = await prisma.photo.findMany({
     where: {
@@ -169,6 +180,26 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
                     {photo.createdAt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                   </span>
                 </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-500 text-sm">Resolution</span>
+                  <span className="text-white text-sm">{photo.width} × {photo.height}</span>
+                </div>
+
+                {fileSize && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500 text-sm">Size</span>
+                    <span className="text-white text-sm">{fileSize}</span>
+                  </div>
+                )}
+
+                <a
+                  href={photo.originalPath}
+                  target="_blank"
+                  className="block w-full text-center py-2 mt-2 border border-neutral-700 text-neutral-300 text-sm hover:bg-white hover:text-black transition-colors"
+                >
+                  View Original
+                </a>
               </div>
 
               {/* Actions */}

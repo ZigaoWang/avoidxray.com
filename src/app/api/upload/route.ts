@@ -27,7 +27,8 @@ export async function POST(req: NextRequest) {
   for (const file of files) {
     const buffer = Buffer.from(await file.arrayBuffer())
     const id = randomUUID()
-    const { originalPath, mediumPath, thumbnailPath, width, height } = await processImage(buffer, id)
+    const ext = file.name.split('.').pop() || 'jpg'
+    const { originalPath, mediumPath, thumbnailPath, width, height } = await processImage(buffer, id, ext)
 
     const photo = await prisma.photo.create({
       data: {

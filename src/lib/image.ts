@@ -4,19 +4,20 @@ import fs from 'fs/promises'
 
 const UPLOAD_DIR = path.join(process.cwd(), 'public/uploads')
 
-export async function processImage(buffer: Buffer, id: string) {
+export async function processImage(buffer: Buffer, id: string, originalExt: string = 'jpg') {
   // Auto-rotate based on EXIF orientation
   const rotated = sharp(buffer).rotate()
   const metadata = await rotated.metadata()
   const width = metadata.width || 0
   const height = metadata.height || 0
 
-  const originalPath = `/uploads/originals/${id}.jpg`
+  const ext = originalExt.toLowerCase()
+  const originalPath = `/uploads/originals/${id}.${ext}`
   const mediumPath = `/uploads/medium/${id}.jpg`
   const thumbnailPath = `/uploads/thumbs/${id}.jpg`
 
-  // Save original (with rotation applied)
-  await rotated.clone().jpeg({ quality: 95 }).toFile(path.join(UPLOAD_DIR, `originals/${id}.jpg`))
+  // Save original as-is (no re-encoding)
+  await fs.writeFile(path.join(UPLOAD_DIR, `originals/${id}.${ext}`), buffer)
 
   // Generate medium (1600px on longest side)
   await rotated.clone()
