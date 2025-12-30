@@ -145,15 +145,15 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
             {/* Right - Info Panel */}
             <div className="lg:w-80 space-y-6">
               {/* Author */}
-              <div className="flex items-center gap-4">
+              <Link href={`/${photo.user.username}`} className="flex items-center gap-4 group">
                 <div className="w-14 h-14 bg-neutral-800 flex items-center justify-center text-white text-xl font-bold">
                   {(photo.user.name || photo.user.username).charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="text-white font-medium text-lg">{photo.user.name || photo.user.username}</p>
+                  <p className="text-white font-medium text-lg group-hover:text-[#D32F2F] transition-colors">{photo.user.name || photo.user.username}</p>
                   <p className="text-neutral-500 text-sm">@{photo.user.username}</p>
                 </div>
-              </div>
+              </Link>
 
               {/* Caption */}
               {photo.caption && (
