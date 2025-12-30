@@ -225,7 +225,7 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
                 )}
 
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-500 text-sm">Date</span>
+                  <span className="text-neutral-500 text-sm">Upload Date</span>
                   <span className="text-white text-sm">
                     {photo.createdAt.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                   </span>
