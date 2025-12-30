@@ -9,8 +9,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
   }
 
+  const emailLower = email.toLowerCase()
+  const usernameLower = username.toLowerCase()
+
   const exists = await prisma.user.findFirst({
-    where: { OR: [{ email }, { username }] }
+    where: { OR: [{ email: emailLower }, { username: usernameLower }] }
   })
 
   if (exists) {
@@ -19,7 +22,7 @@ export async function POST(req: NextRequest) {
 
   const passwordHash = await bcrypt.hash(password, 10)
   const user = await prisma.user.create({
-    data: { email, passwordHash, username, name }
+    data: { email: emailLower, passwordHash, username: usernameLower, name }
   })
 
   return NextResponse.json({ id: user.id, email: user.email })

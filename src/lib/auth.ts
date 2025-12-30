@@ -14,8 +14,16 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+        const identifier = credentials.email.toLowerCase()
+
+        // Try to find by email or username (case-insensitive)
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { email: identifier },
+              { username: identifier }
+            ]
+          }
         })
 
         if (!user) return null
