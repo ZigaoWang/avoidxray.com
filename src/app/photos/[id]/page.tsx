@@ -8,6 +8,7 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import DeleteButton from './DeleteButton'
 import LikeButton from '@/components/LikeButton'
+import ColorPalette from '@/components/ColorPalette'
 import { Vibrant } from 'node-vibrant/node'
 import path from 'path'
 
@@ -116,30 +117,8 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
                 </div>
               </div>
 
-              {/* Color Palette Bar */}
-              <div className="mt-6">
-                <p className="text-neutral-500 text-xs uppercase tracking-wider mb-3">Color Palette</p>
-                <div className="flex h-4 rounded overflow-hidden">
-                  {colorPalette.map((c, i) => (
-                    <div
-                      key={i}
-                      style={{ backgroundColor: c.color, flex: 1 }}
-                      className="h-full"
-                    />
-                  ))}
-                </div>
-                <div className="flex mt-3 gap-6">
-                  {colorPalette.map((c, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <div className="w-4 h-4 rounded" style={{ backgroundColor: c.color }} />
-                      <div>
-                        <span className="text-neutral-400 text-xs block">{c.name}</span>
-                        <span className="text-neutral-600 text-[10px] font-mono uppercase">{c.color}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              {/* Color Palette */}
+              <ColorPalette colors={colorPalette} />
             </div>
 
             {/* Right - Info Panel */}
