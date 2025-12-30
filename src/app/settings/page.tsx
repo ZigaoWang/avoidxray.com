@@ -5,21 +5,30 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import ClientHeader from '@/components/ClientHeader'
 import Footer from '@/components/Footer'
+import { useToast } from '@/components/ui/Toast'
 
 export default function SettingsPage() {
   const { data: session, status, update } = useSession()
   const router = useRouter()
+  const { toast } = useToast()
   const [name, setName] = useState('')
+  const [bio, setBio] = useState('')
+  const [website, setWebsite] = useState('')
+  const [instagram, setInstagram] = useState('')
+  const [twitter, setTwitter] = useState('')
   const [avatar, setAvatar] = useState<string | null>(null)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState('')
 
   useEffect(() => {
     if (session?.user) {
-      const user = session.user as { name?: string; avatar?: string }
+      const user = session.user as { name?: string; avatar?: string; bio?: string; website?: string; instagram?: string; twitter?: string }
       setName(user.name || '')
       setAvatar(user.avatar || null)
+      setBio(user.bio || '')
+      setWebsite(user.website || '')
+      setInstagram(user.instagram || '')
+      setTwitter(user.twitter || '')
     }
   }, [session])
 
@@ -59,16 +68,15 @@ export default function SettingsPage() {
     const res = await fetch('/api/user', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, avatar: avatarPath })
+      body: JSON.stringify({ name, avatar: avatarPath, bio, website, instagram, twitter })
     })
 
     if (res.ok) {
       await update({ name, avatar: avatarPath })
       router.refresh()
-      setMessage('Saved!')
-      setTimeout(() => setMessage(''), 2000)
+      toast('Settings saved!', 'success')
     } else {
-      setMessage('Error saving')
+      toast('Error saving settings', 'error')
     }
     setSaving(false)
   }
@@ -120,6 +128,56 @@ export default function SettingsPage() {
             />
           </div>
 
+          <div>
+            <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2 font-medium">Bio</label>
+            <textarea
+              value={bio}
+              onChange={e => setBio(e.target.value)}
+              rows={3}
+              placeholder="Tell us about yourself..."
+              className="w-full p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2 font-medium">Website</label>
+            <input
+              type="url"
+              value={website}
+              onChange={e => setWebsite(e.target.value)}
+              placeholder="https://yourwebsite.com"
+              className="w-full p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2 font-medium">Instagram</label>
+            <div className="flex">
+              <span className="p-3 bg-neutral-800 text-neutral-500 border border-r-0 border-neutral-800">@</span>
+              <input
+                type="text"
+                value={instagram}
+                onChange={e => setInstagram(e.target.value)}
+                placeholder="username"
+                className="flex-1 p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2 font-medium">Twitter / X</label>
+            <div className="flex">
+              <span className="p-3 bg-neutral-800 text-neutral-500 border border-r-0 border-neutral-800">@</span>
+              <input
+                type="text"
+                value={twitter}
+                onChange={e => setTwitter(e.target.value)}
+                placeholder="username"
+                className="flex-1 p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none"
+              />
+            </div>
+          </div>
+
           <div className="flex items-center gap-4 pt-4">
             <button
               type="submit"
@@ -128,7 +186,6 @@ export default function SettingsPage() {
             >
               {saving ? 'Saving...' : 'Save'}
             </button>
-            {message && <span className="text-neutral-400 text-sm">{message}</span>}
           </div>
         </form>
       </main>

@@ -42,7 +42,7 @@ export default function QuickLikeButton({ photoId, initialLiked, initialCount }:
     >
       <svg
         viewBox="0 0 24 24"
-        className="w-5 h-5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+        className={`w-5 h-5 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] ${animating ? 'animate-heart-pop' : ''}`}
         fill={liked ? '#D32F2F' : 'rgba(255,255,255,0.9)'}
         stroke={liked ? '#D32F2F' : 'rgba(0,0,0,0.3)'}
         strokeWidth={1}

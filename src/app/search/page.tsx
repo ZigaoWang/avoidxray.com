@@ -4,8 +4,8 @@ import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
-export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; type?: string }> }) {
-  const { q = '', type = 'all' } = await searchParams
+export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; type?: string; film?: string; camera?: string; sort?: string }> }) {
+  const { q = '', type = 'all', film, camera, sort = 'recent' } = await searchParams
 
   if (!q) {
     return (
@@ -21,33 +21,78 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
 
   const query = q.toLowerCase()
 
-  const [photos, users, cameras, films] = await Promise.all([
-    type === 'all' || type === 'photos' ? prisma.photo.findMany({
-      where: { caption: { contains: query } },
-      include: { user: true, filmStock: true, _count: { select: { likes: true } } },
-      take: 50
-    }) : [],
-    type === 'all' || type === 'users' ? prisma.user.findMany({
-      where: { OR: [{ username: { contains: query } }, { name: { contains: query } }] },
-      include: { _count: { select: { photos: true } } },
-      take: 50
-    }) : [],
-    type === 'all' || type === 'cameras' ? prisma.camera.findMany({
-      where: { OR: [{ name: { contains: query } }, { brand: { contains: query } }] },
-      include: { _count: { select: { photos: true } } },
-      take: 50
-    }) : [],
-    type === 'all' || type === 'films' ? prisma.filmStock.findMany({
-      where: { OR: [{ name: { contains: query } }, { brand: { contains: query } }] },
-      include: { _count: { select: { photos: true } } },
-      take: 50
-    }) : []
-  ])
+  // Check if searching for a tag
+  const isTagSearch = query.startsWith('#')
+  const tagName = isTagSearch ? query.slice(1) : null
+
+  let photos: any[] = []
+  let users: any[] = []
+  let cameras: any[] = []
+  let films: any[] = []
+  let tags: any[] = []
+
+  if (isTagSearch && tagName) {
+    // Tag search
+    const tag = await prisma.tag.findUnique({
+      where: { name: tagName },
+      include: {
+        photos: {
+          include: {
+            photo: {
+              include: { user: true, filmStock: true, _count: { select: { likes: true } } }
+            }
+          }
+        }
+      }
+    })
+    if (tag) {
+      photos = tag.photos.map(pt => pt.photo)
+    }
+  } else {
+    // Regular search with filters
+    const photoWhere: any = { caption: { contains: query } }
+    if (film) photoWhere.filmStockId = film
+    if (camera) photoWhere.cameraId = camera
+
+    const photoOrderBy: any = sort === 'popular'
+      ? { likes: { _count: 'desc' } }
+      : { createdAt: 'desc' }
+
+    ;[photos, users, cameras, films, tags] = await Promise.all([
+      type === 'all' || type === 'photos' ? prisma.photo.findMany({
+        where: photoWhere,
+        include: { user: true, filmStock: true, _count: { select: { likes: true } } },
+        orderBy: photoOrderBy,
+        take: 50
+      }) : [],
+      type === 'all' || type === 'users' ? prisma.user.findMany({
+        where: { OR: [{ username: { contains: query } }, { name: { contains: query } }] },
+        include: { _count: { select: { photos: true } } },
+        take: 50
+      }) : [],
+      type === 'all' || type === 'cameras' ? prisma.camera.findMany({
+        where: { OR: [{ name: { contains: query } }, { brand: { contains: query } }] },
+        include: { _count: { select: { photos: true } } },
+        take: 50
+      }) : [],
+      type === 'all' || type === 'films' ? prisma.filmStock.findMany({
+        where: { OR: [{ name: { contains: query } }, { brand: { contains: query } }] },
+        include: { _count: { select: { photos: true } } },
+        take: 50
+      }) : [],
+      type === 'all' || type === 'tags' ? prisma.tag.findMany({
+        where: { name: { contains: query } },
+        include: { _count: { select: { photos: true } } },
+        take: 20
+      }) : []
+    ])
+  }
 
   const tabs = [
     { id: 'all', label: 'All' },
     { id: 'photos', label: `Photos (${photos.length})` },
     { id: 'users', label: `Users (${users.length})` },
+    { id: 'tags', label: `Tags (${tags.length})` },
     { id: 'cameras', label: `Cameras (${cameras.length})` },
     { id: 'films', label: `Films (${films.length})` }
   ]
@@ -101,6 +146,20 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                       <p className="text-white font-medium truncate">{user.name || user.username}</p>
                       <p className="text-neutral-500 text-sm">@{user.username} · {user._count.photos} photos</p>
                     </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Tags */}
+          {(type === 'all' || type === 'tags') && tags.length > 0 && (
+            <section className="mb-10">
+              {type === 'all' && <h2 className="text-neutral-500 text-xs uppercase tracking-wider mb-4">Tags</h2>}
+              <div className="flex flex-wrap gap-2">
+                {tags.map(tag => (
+                  <Link key={tag.id} href={`/tags/${tag.name}`} className="px-3 py-2 bg-neutral-900 hover:bg-neutral-800 transition-colors text-white text-sm">
+                    #{tag.name} <span className="text-neutral-500">({tag._count.photos})</span>
                   </Link>
                 ))}
               </div>

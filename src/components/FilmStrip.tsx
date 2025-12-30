@@ -47,7 +47,7 @@ export default function FilmStrip({ photos }: { photos: Photo[] }) {
                   src={photo.thumbnailPath}
                   alt=""
                   fill
-                  className="object-cover"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
                   sizes="20vw"
                 />
                 {/* Like button */}

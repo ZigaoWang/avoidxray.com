@@ -17,10 +17,18 @@ model User {
   username     String   @unique
   name         String?
   avatar       String?
+  bio          String?
+  website      String?
+  instagram    String?
+  twitter      String?
   createdAt    DateTime @default(now())
   photos       Photo[]
   cameras      Camera[]
   likes        Like[]
+  comments     Comment[]
+  followers    Follow[] @relation("following")
+  following    Follow[] @relation("followers")
+  notifications Notification[]
 }
 
 model Photo {
@@ -39,6 +47,8 @@ model Photo {
   filmStock     FilmStock? @relation(fields: [filmStockId], references: [id])
   createdAt     DateTime   @default(now())
   likes         Like[]
+  comments      Comment[]
+  tags          PhotoTag[]
 }
 
 model Like {
@@ -69,4 +79,83 @@ model FilmStock {
   brand  String?
   iso    Int?
   photos Photo[]
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  follower    User     @relation("followers", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photoId   String
+  photo     Photo    @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Tag {
+  id     String     @id @default(cuid())
+  name   String     @unique
+  photos PhotoTag[]
+}
+
+model PhotoTag {
+  id      String @id @default(cuid())
+  photoId String
+  photo   Photo  @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  tagId   String
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([photoId, tagId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actorId   String
+  photoId   String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Collection {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  coverImage  String?
+  featured    Boolean           @default(false)
+  createdAt   DateTime          @default(now())
+  photos      CollectionPhoto[]
+}
+
+model CollectionPhoto {
+  id           String     @id @default(cuid())
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  photoId      String
+  order        Int        @default(0)
+
+  @@unique([collectionId, photoId])
+}
+
+model Challenge {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  startDate   DateTime
+  endDate     DateTime
+  tagName     String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
 }

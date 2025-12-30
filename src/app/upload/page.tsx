@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Combobox from '@/components/Combobox'
 import ClientHeader from '@/components/ClientHeader'
 import Footer from '@/components/Footer'
+import TagInput from '@/components/TagInput'
 
 type Camera = { id: string; name: string; brand: string | null }
 type FilmStock = { id: string; name: string; brand: string | null }
@@ -15,6 +16,7 @@ export default function UploadPage() {
   const [files, setFiles] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [caption, setCaption] = useState('')
+  const [tags, setTags] = useState<string[]>([])
   const [cameras, setCameras] = useState<Camera[]>([])
   const [filmStocks, setFilmStocks] = useState<FilmStock[]>([])
   const [cameraId, setCameraId] = useState('')
@@ -96,6 +98,7 @@ export default function UploadPage() {
     if (caption) formData.append('caption', caption)
     if (finalCameraId) formData.append('cameraId', finalCameraId)
     if (finalFilmStockId) formData.append('filmStockId', finalFilmStockId)
+    if (tags.length > 0) formData.append('tags', JSON.stringify(tags))
 
     const interval = setInterval(() => {
       setProgress(p => Math.min(p + 10, 90))
@@ -214,6 +217,11 @@ export default function UploadPage() {
                 placeholder="Search..."
                 label="Film Stock"
               />
+            </div>
+
+            <div>
+              <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2 font-medium">Tags</label>
+              <TagInput value={tags} onChange={setTags} />
             </div>
           </div>
 

@@ -8,6 +8,7 @@ export default function LikeButton({ photoId, initialLiked, initialCount }: { ph
   const router = useRouter()
   const [liked, setLiked] = useState(initialLiked)
   const [count, setCount] = useState(initialCount)
+  const [animating, setAnimating] = useState(false)
 
   const handleLike = async () => {
     if (!session) {
@@ -18,6 +19,11 @@ export default function LikeButton({ photoId, initialLiked, initialCount }: { ph
     const newLiked = !liked
     setLiked(newLiked)
     setCount(c => newLiked ? c + 1 : c - 1)
+
+    if (newLiked) {
+      setAnimating(true)
+      setTimeout(() => setAnimating(false), 300)
+    }
 
     await fetch('/api/likes', {
       method: 'POST',
@@ -33,7 +39,7 @@ export default function LikeButton({ photoId, initialLiked, initialCount }: { ph
         liked ? 'text-[#D32F2F]' : 'text-neutral-500 hover:text-white'
       }`}
     >
-      <span className="text-lg">{liked ? '♥' : '♡'}</span>
+      <span className={`text-lg ${animating ? 'animate-heart-pop' : ''}`}>{liked ? '♥' : '♡'}</span>
       <span>{count}</span>
     </button>
   )

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Logo from '@/components/Logo'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -25,7 +25,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
       <header className="py-5 px-6">
-        <Logo />
+        <Link href="/">
+          <Image src="/logo.svg" alt="AVOID X RAY" width={160} height={32} />
+        </Link>
       </header>
 
       <main className="flex-1 flex items-center justify-center px-6">

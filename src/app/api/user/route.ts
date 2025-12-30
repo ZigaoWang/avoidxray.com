@@ -10,11 +10,18 @@ export async function PATCH(req: NextRequest) {
   }
 
   const userId = (session.user as { id: string }).id
-  const { name, avatar } = await req.json()
+  const { name, avatar, bio, website, instagram, twitter } = await req.json()
 
   const user = await prisma.user.update({
     where: { id: userId },
-    data: { name: name || null, avatar: avatar || null }
+    data: {
+      name: name || null,
+      avatar: avatar || null,
+      bio: bio || null,
+      website: website || null,
+      instagram: instagram || null,
+      twitter: twitter || null
+    }
   })
 
   return NextResponse.json({ user })

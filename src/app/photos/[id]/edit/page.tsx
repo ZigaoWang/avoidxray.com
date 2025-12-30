@@ -3,8 +3,8 @@ import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import Combobox from '@/components/Combobox'
-import Logo from '@/components/Logo'
 
 type Camera = { id: string; name: string; brand: string | null }
 type FilmStock = { id: string; name: string; brand: string | null }
@@ -118,7 +118,9 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <header className="py-5 px-6">
-        <Logo />
+        <Link href="/">
+          <Image src="/logo.svg" alt="AVOID X RAY" width={160} height={32} />
+        </Link>
       </header>
 
       <main className="max-w-xl mx-auto py-12 px-6">

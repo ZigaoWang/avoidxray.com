@@ -9,6 +9,8 @@ import Footer from '@/components/Footer'
 import DeleteButton from './DeleteButton'
 import LikeButton from '@/components/LikeButton'
 import ColorPalette from '@/components/ColorPalette'
+import CommentSection from '@/components/CommentSection'
+import TagList from '@/components/TagList'
 import { Vibrant } from 'node-vibrant/node'
 import path from 'path'
 
@@ -48,7 +50,7 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
 
   const photo = await prisma.photo.findUnique({
     where: { id },
-    include: { camera: true, filmStock: true, user: true, _count: { select: { likes: true } } }
+    include: { camera: true, filmStock: true, user: true, _count: { select: { likes: true } }, tags: { include: { tag: true } } }
   })
 
   const userLiked = userId ? await prisma.like.findUnique({
@@ -154,6 +156,13 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
                 <p className="text-neutral-300 leading-relaxed">{photo.caption}</p>
               )}
 
+              {/* Tags */}
+              {photo.tags.length > 0 && (
+                <div className="pt-2">
+                  <TagList tags={photo.tags} />
+                </div>
+              )}
+
               {/* Details */}
               <div className="space-y-4 pt-4 border-t border-neutral-800">
                 {photo.camera && (
@@ -213,6 +222,11 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
                     <DeleteButton photoId={photo.id} />
                   </>
                 )}
+              </div>
+
+              {/* Comments */}
+              <div className="pt-4 border-t border-neutral-800">
+                <CommentSection photoId={photo.id} />
               </div>
             </div>
           </div>

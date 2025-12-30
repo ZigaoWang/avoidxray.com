@@ -21,6 +21,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ liked: false })
   } else {
     await prisma.like.create({ data: { userId, photoId } })
+
+    // Create notification for photo owner
+    const photo = await prisma.photo.findUnique({ where: { id: photoId }, select: { userId: true } })
+    if (photo && photo.userId !== userId) {
+      await prisma.notification.create({
+        data: { type: 'like', userId: photo.userId, actorId: userId, photoId }
+      })
+    }
+
     return NextResponse.json({ liked: true })
   }
 }

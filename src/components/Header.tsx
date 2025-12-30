@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import UserMenu from './UserMenu'
 import SearchBar from './SearchBar'
+import NotificationBell from './NotificationBell'
 
 export default async function Header() {
   const session = await getServerSession(authOptions)
@@ -33,6 +34,7 @@ export default async function Header() {
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" /></svg>
                 Upload
               </Link>
+              <NotificationBell />
               <UserMenu username={user.username} name={user.name} avatar={user.avatar} />
             </>
           ) : (

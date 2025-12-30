@@ -16,6 +16,8 @@ export async function POST(req: NextRequest) {
   const caption = formData.get('caption') as string | null
   const cameraId = formData.get('cameraId') as string | null
   const filmStockId = formData.get('filmStockId') as string | null
+  const tagsJson = formData.get('tags') as string | null
+  const tags: string[] = tagsJson ? JSON.parse(tagsJson) : []
 
   if (!files.length) {
     return NextResponse.json({ error: 'No files' }, { status: 400 })
@@ -38,6 +40,17 @@ export async function POST(req: NextRequest) {
     if (film) validFilmStockId = filmStockId
   }
 
+  // Create or get tags
+  const tagRecords = await Promise.all(
+    tags.map(name =>
+      prisma.tag.upsert({
+        where: { name },
+        update: {},
+        create: { name }
+      })
+    )
+  )
+
   for (const file of files) {
     const buffer = Buffer.from(await file.arrayBuffer())
     const id = randomUUID()
@@ -55,7 +68,10 @@ export async function POST(req: NextRequest) {
         height,
         caption,
         cameraId: validCameraId,
-        filmStockId: validFilmStockId
+        filmStockId: validFilmStockId,
+        tags: {
+          create: tagRecords.map(tag => ({ tagId: tag.id }))
+        }
       }
     })
     photos.push(photo)
