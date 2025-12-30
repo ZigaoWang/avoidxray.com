@@ -2,9 +2,11 @@
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import Logo from './Logo'
+import UserMenu from './UserMenu'
 
 export default function ClientHeader() {
   const { data: session } = useSession()
+  const user = session?.user as { username?: string; name?: string } | undefined
 
   return (
     <header className="bg-[#0a0a0a]">
@@ -18,14 +20,12 @@ export default function ClientHeader() {
           <Link href="/cameras" className="text-xs text-neutral-400 hover:text-white transition-colors uppercase tracking-wide font-medium">
             Cameras
           </Link>
-          {session ? (
+          {session && user?.username ? (
             <>
               <Link href="/upload" className="text-xs text-neutral-400 hover:text-white transition-colors uppercase tracking-wide font-medium">
                 Upload
               </Link>
-              <Link href="/api/auth/signout" className="text-xs text-neutral-400 hover:text-white transition-colors uppercase tracking-wide font-medium">
-                Sign Out
-              </Link>
+              <UserMenu username={user.username} name={user.name} />
             </>
           ) : (
             <>

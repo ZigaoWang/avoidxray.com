@@ -30,10 +30,15 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id
         token.username = (user as { username?: string }).username
+        token.name = user.name
+      }
+      // Handle session update from client
+      if (trigger === 'update' && session?.name !== undefined) {
+        token.name = session.name
       }
       return token
     },
@@ -41,6 +46,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         (session.user as { id?: string }).id = token.id as string
         (session.user as { username?: string }).username = token.username as string
+        session.user.name = token.name as string | null
       }
       return session
     }
