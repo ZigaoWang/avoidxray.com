@@ -146,8 +146,12 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
             <div className="lg:w-80 space-y-6">
               {/* Author */}
               <Link href={`/${photo.user.username}`} className="flex items-center gap-4 group">
-                <div className="w-14 h-14 bg-neutral-800 flex items-center justify-center text-white text-xl font-bold">
-                  {(photo.user.name || photo.user.username).charAt(0).toUpperCase()}
+                <div className="w-14 h-14 bg-neutral-800 flex items-center justify-center text-white text-xl font-bold overflow-hidden">
+                  {photo.user.avatar ? (
+                    <Image src={photo.user.avatar} alt="" width={56} height={56} className="w-full h-full object-cover" />
+                  ) : (
+                    (photo.user.name || photo.user.username).charAt(0).toUpperCase()
+                  )}
                 </div>
                 <div>
                   <p className="text-white font-medium text-lg group-hover:text-[#D32F2F] transition-colors">{photo.user.name || photo.user.username}</p>

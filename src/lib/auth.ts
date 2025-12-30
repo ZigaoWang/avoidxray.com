@@ -31,7 +31,7 @@ export const authOptions: NextAuthOptions = {
         const valid = await bcrypt.compare(credentials.password, user.passwordHash)
         if (!valid) return null
 
-        return { id: user.id, email: user.email, name: user.name, username: user.username }
+        return { id: user.id, email: user.email, name: user.name, username: user.username, avatar: user.avatar }
       }
     })
   ],
@@ -43,10 +43,12 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id
         token.username = (user as { username?: string }).username
         token.name = user.name
+        token.avatar = (user as { avatar?: string }).avatar
       }
       // Handle session update from client
-      if (trigger === 'update' && session?.name !== undefined) {
-        token.name = session.name
+      if (trigger === 'update') {
+        if (session?.name !== undefined) token.name = session.name
+        if (session?.avatar !== undefined) token.avatar = session.avatar
       }
       return token
     },
@@ -55,6 +57,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as { id?: string }).id = token.id as string
         (session.user as { username?: string }).username = token.username as string
         session.user.name = token.name as string | null
+        (session.user as { avatar?: string }).avatar = token.avatar as string | null
       }
       return session
     }

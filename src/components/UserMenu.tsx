@@ -1,14 +1,16 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { signOut } from 'next-auth/react'
 
 type UserMenuProps = {
   username: string
   name?: string | null
+  avatar?: string | null
 }
 
-export default function UserMenu({ username, name }: UserMenuProps) {
+export default function UserMenu({ username, name, avatar }: UserMenuProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -24,9 +26,13 @@ export default function UserMenu({ username, name }: UserMenuProps) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="w-8 h-8 bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-white text-sm font-bold transition-colors"
+        className="w-8 h-8 bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-white text-sm font-bold transition-colors overflow-hidden"
       >
-        {(name || username).charAt(0).toUpperCase()}
+        {avatar ? (
+          <Image src={avatar} alt="" width={32} height={32} className="w-full h-full object-cover" />
+        ) : (
+          (name || username).charAt(0).toUpperCase()
+        )}
       </button>
 
       {open && (

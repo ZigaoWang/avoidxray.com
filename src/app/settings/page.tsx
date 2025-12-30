@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import ClientHeader from '@/components/ClientHeader'
 import Footer from '@/components/Footer'
 
@@ -9,12 +10,16 @@ export default function SettingsPage() {
   const { data: session, status, update } = useSession()
   const router = useRouter()
   const [name, setName] = useState('')
+  const [avatar, setAvatar] = useState<string | null>(null)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
 
   useEffect(() => {
     if (session?.user) {
-      setName((session.user as { name?: string }).name || '')
+      const user = session.user as { name?: string; avatar?: string }
+      setName(user.name || '')
+      setAvatar(user.avatar || null)
     }
   }, [session])
 
@@ -24,21 +29,41 @@ export default function SettingsPage() {
     return null
   }
 
-  const user = session.user as { username?: string; name?: string }
+  const user = session.user as { username?: string; name?: string; avatar?: string }
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setAvatarFile(file)
+      setAvatar(URL.createObjectURL(file))
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setMessage('')
 
+    let avatarPath = user.avatar
+
+    if (avatarFile) {
+      const formData = new FormData()
+      formData.append('file', avatarFile)
+      const uploadRes = await fetch('/api/avatar', { method: 'POST', body: formData })
+      if (uploadRes.ok) {
+        const data = await uploadRes.json()
+        avatarPath = data.path
+      }
+    }
+
     const res = await fetch('/api/user', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name })
+      body: JSON.stringify({ name, avatar: avatarPath })
     })
 
     if (res.ok) {
-      await update({ name })
+      await update({ name, avatar: avatarPath })
       router.refresh()
       setMessage('Saved!')
       setTimeout(() => setMessage(''), 2000)
@@ -57,6 +82,23 @@ export default function SettingsPage() {
         <p className="text-neutral-500 mb-10">Edit your profile</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2 font-medium">Avatar</label>
+            <div className="flex items-center gap-4">
+              <div className="w-20 h-20 bg-neutral-800 flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+                {avatar ? (
+                  <Image src={avatar} alt="" width={80} height={80} className="w-full h-full object-cover" />
+                ) : (
+                  (user.name || user.username || '?').charAt(0).toUpperCase()
+                )}
+              </div>
+              <label className="cursor-pointer bg-neutral-800 text-white px-4 py-2 text-sm hover:bg-neutral-700 transition-colors">
+                Change
+                <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+              </label>
+            </div>
+          </div>
+
           <div>
             <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2 font-medium">Username</label>
             <input

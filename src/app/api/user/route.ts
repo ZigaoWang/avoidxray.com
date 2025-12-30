@@ -10,11 +10,11 @@ export async function PATCH(req: NextRequest) {
   }
 
   const userId = (session.user as { id: string }).id
-  const { name } = await req.json()
+  const { name, avatar } = await req.json()
 
   const user = await prisma.user.update({
     where: { id: userId },
-    data: { name: name || null }
+    data: { name: name || null, avatar: avatar || null }
   })
 
   return NextResponse.json({ user })

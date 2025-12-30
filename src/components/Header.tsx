@@ -6,7 +6,7 @@ import UserMenu from './UserMenu'
 
 export default async function Header() {
   const session = await getServerSession(authOptions)
-  const user = session?.user as { username?: string; name?: string } | undefined
+  const user = session?.user as { username?: string; name?: string; avatar?: string } | undefined
 
   return (
     <header className="bg-[#0a0a0a]">
@@ -25,7 +25,7 @@ export default async function Header() {
               <Link href="/upload" className="text-xs text-neutral-400 hover:text-white transition-colors uppercase tracking-wide font-medium">
                 Upload
               </Link>
-              <UserMenu username={user.username} name={user.name} />
+              <UserMenu username={user.username} name={user.name} avatar={user.avatar} />
             </>
           ) : (
             <>

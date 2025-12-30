@@ -54,3 +54,5 @@ next-env.d.ts
 !public/uploads/originals/.gitkeep
 !public/uploads/medium/.gitkeep
 !public/uploads/thumbs/.gitkeep
+/public/avatars/*
+!public/avatars/.gitkeep

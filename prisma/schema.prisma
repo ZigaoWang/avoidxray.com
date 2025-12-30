@@ -16,6 +16,7 @@ model User {
   passwordHash String
   username     String   @unique
   name         String?
+  avatar       String?
   createdAt    DateTime @default(now())
   photos       Photo[]
   cameras      Camera[]

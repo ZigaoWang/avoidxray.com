@@ -34,8 +34,12 @@ export default async function UserPage({ params }: { params: Promise<{ username:
           <div className="max-w-5xl mx-auto px-6 py-12">
             <div className="flex items-center gap-8">
               {/* Avatar */}
-              <div className="w-24 h-24 md:w-32 md:h-32 bg-neutral-800 flex items-center justify-center text-white text-4xl md:text-5xl font-black shrink-0">
-                {(user.name || user.username).charAt(0).toUpperCase()}
+              <div className="w-24 h-24 md:w-32 md:h-32 bg-neutral-800 flex items-center justify-center text-white text-4xl md:text-5xl font-black shrink-0 overflow-hidden">
+                {user.avatar ? (
+                  <Image src={user.avatar} alt="" width={128} height={128} className="w-full h-full object-cover" />
+                ) : (
+                  (user.name || user.username).charAt(0).toUpperCase()
+                )}
               </div>
 
               {/* Info */}
