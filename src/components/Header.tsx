@@ -1,7 +1,7 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import Logo from './Logo'
 import UserMenu from './UserMenu'
 import SearchBar from './SearchBar'
 
@@ -12,7 +12,9 @@ export default async function Header() {
   return (
     <header className="bg-[#0a0a0a]">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-5">
-        <Logo />
+        <Link href="/">
+          <Image src="/logo.svg" alt="AVOID X RAY" width={160} height={32} />
+        </Link>
 
         <nav className="flex items-center gap-6">
           <SearchBar />

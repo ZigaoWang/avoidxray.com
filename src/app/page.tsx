@@ -76,9 +76,8 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
         {/* Content */}
         <div className="relative z-10 text-center px-6">
           {/* Logo */}
-          <div className="flex items-center justify-center gap-1 mb-8">
-            <span className="bg-[#D32F2F] text-white font-black text-2xl md:text-4xl px-3 py-2 tracking-tight">AVOID</span>
-            <span className="bg-white text-black font-black text-2xl md:text-4xl px-3 py-2 tracking-tight">X RAY</span>
+          <div className="flex items-center justify-center mb-8">
+            <Image src="/logo.svg" alt="AVOID X RAY" width={300} height={60} />
           </div>
           <p className="text-white/60 text-xl md:text-2xl font-light mb-10">
             Protect your film. Share your work.
