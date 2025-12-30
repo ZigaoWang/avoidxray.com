@@ -21,6 +21,7 @@ model User {
   website      String?
   instagram    String?
   twitter      String?
+  isAdmin      Boolean  @default(false)
   createdAt    DateTime @default(now())
   photos       Photo[]
   cameras      Camera[]
