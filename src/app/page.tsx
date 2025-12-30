@@ -97,7 +97,7 @@ export default async function Home() {
             <a href="#gallery" className="bg-[#D32F2F] text-white px-8 py-4 text-sm font-bold uppercase tracking-wider hover:bg-[#B71C1C] transition-colors">
               Browse
             </a>
-            <Link href="/register" className="border border-neutral-700 text-white px-8 py-4 text-sm font-bold uppercase tracking-wider hover:bg-white hover:text-black transition-colors">
+            <Link href={session ? "/upload" : "/register"} className="border border-neutral-700 text-white px-8 py-4 text-sm font-bold uppercase tracking-wider hover:bg-white hover:text-black transition-colors">
               Upload
             </Link>
           </div>
