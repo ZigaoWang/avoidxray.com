@@ -125,15 +125,24 @@ export default async function ExplorePage({ searchParams }: { searchParams: Prom
                 <div className="bg-neutral-900 p-4">
                   <h3 className="text-sm font-bold uppercase tracking-wide text-neutral-400 mb-4">Popular Tags</h3>
                   <div className="flex flex-wrap gap-2">
-                    {popularTags.map(tag => (
-                      <Link
-                        key={tag.id}
-                        href={`/tags/${tag.name}`}
-                        className="text-sm text-neutral-400 hover:text-white transition-colors"
-                      >
-                        #{tag.name}
-                      </Link>
-                    ))}
+                    {(() => {
+                      const maxCount = Math.max(...popularTags.map(t => t._count.photos))
+                      const minCount = Math.min(...popularTags.map(t => t._count.photos))
+                      return popularTags.map(tag => {
+                        const ratio = maxCount === minCount ? 1 : (tag._count.photos - minCount) / (maxCount - minCount)
+                        const fontSize = 0.75 + ratio * 0.75 // 0.75rem to 1.5rem
+                        return (
+                          <Link
+                            key={tag.id}
+                            href={`/tags/${tag.name}`}
+                            className="text-neutral-400 hover:text-white transition-colors"
+                            style={{ fontSize: `${fontSize}rem` }}
+                          >
+                            #{tag.name}
+                          </Link>
+                        )
+                      })
+                    })()}
                   </div>
                 </div>
               )}
