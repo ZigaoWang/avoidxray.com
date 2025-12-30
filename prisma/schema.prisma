@@ -49,6 +49,7 @@ model Photo {
   likes         Like[]
   comments      Comment[]
   tags          PhotoTag[]
+  collections   CollectionPhoto[]
 }
 
 model Like {
@@ -144,6 +145,7 @@ model CollectionPhoto {
   collectionId String
   collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   photoId      String
+  photo        Photo      @relation(fields: [photoId], references: [id], onDelete: Cascade)
   order        Int        @default(0)
 
   @@unique([collectionId, photoId])

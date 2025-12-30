@@ -20,7 +20,7 @@ export default function SearchBar() {
   const ref = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
-  const debounceRef = useRef<NodeJS.Timeout>()
+  const debounceRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {

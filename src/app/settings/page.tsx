@@ -51,7 +51,6 @@ export default function SettingsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
-    setMessage('')
 
     let avatarPath = user.avatar
 

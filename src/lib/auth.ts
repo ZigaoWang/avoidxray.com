@@ -57,7 +57,7 @@ export const authOptions: NextAuthOptions = {
         (session.user as { id?: string }).id = token.id as string
         (session.user as { username?: string }).username = token.username as string
         session.user.name = token.name as string | null
-        (session.user as { avatar?: string }).avatar = token.avatar as string | null
+        (session.user as { avatar?: string }).avatar = (token.avatar as string | null) || undefined
       }
       return session
     }
