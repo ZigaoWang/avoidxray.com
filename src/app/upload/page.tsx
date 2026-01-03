@@ -11,6 +11,32 @@ type Camera = { id: string; name: string; brand: string | null }
 type FilmStock = { id: string; name: string; brand: string | null }
 type UploadStatus = 'pending' | 'uploading' | 'done' | 'error'
 
+// Resize image in browser before upload
+async function resizeImage(file: File, maxSize: number): Promise<Blob> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      let { width, height } = img
+      if (width > maxSize || height > maxSize) {
+        if (width > height) {
+          height = (height / width) * maxSize
+          width = maxSize
+        } else {
+          width = (width / height) * maxSize
+          height = maxSize
+        }
+      }
+      canvas.width = width
+      canvas.height = height
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, 0, 0, width, height)
+      canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.85)
+    }
+    img.src = URL.createObjectURL(file)
+  })
+}
+
 export default function UploadPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -109,14 +135,18 @@ export default function UploadPage() {
       }
     }
 
-    // Upload files one by one
-    for (let i = 0; i < files.length; i++) {
-      if (uploadStatus[i] === 'done') continue
+    // Upload files in parallel (3 at a time)
+    const PARALLEL_UPLOADS = 3
+    const uploadFile = async (i: number) => {
+      if (uploadStatus[i] === 'done') return
 
       setUploadStatus(prev => prev.map((s, idx) => idx === i ? 'uploading' : s))
 
+      // Resize in browser before upload (max 2000px)
+      const resized = await resizeImage(files[i], 2000)
+
       const formData = new FormData()
-      formData.append('files', files[i])
+      formData.append('files', resized, files[i].name)
       if (caption) formData.append('caption', caption)
       if (finalCameraId) formData.append('cameraId', finalCameraId)
       if (finalFilmStockId) formData.append('filmStockId', finalFilmStockId)
@@ -128,6 +158,12 @@ export default function UploadPage() {
       } catch {
         setUploadStatus(prev => prev.map((s, idx) => idx === i ? 'error' : s))
       }
+    }
+
+    // Process in batches
+    for (let i = 0; i < files.length; i += PARALLEL_UPLOADS) {
+      const batch = Array.from({ length: Math.min(PARALLEL_UPLOADS, files.length - i) }, (_, j) => i + j)
+      await Promise.all(batch.map(uploadFile))
     }
 
     setUploading(false)
