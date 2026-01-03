@@ -7,25 +7,17 @@ export async function processImage(buffer: Buffer, id: string, originalExt: stri
   const width = metadata.width || 0
   const height = metadata.height || 0
 
-  const ext = originalExt.toLowerCase()
+  // Generate compressed versions in parallel
+  const [mediumBuffer, thumbBuffer] = await Promise.all([
+    sharp(rotatedBuffer).resize(1600, 1600, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 }).toBuffer(),
+    sharp(rotatedBuffer).resize(800, 800, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 75 }).toBuffer(),
+  ])
 
-  // Generate medium (1600px)
-  const mediumBuffer = await sharp(rotatedBuffer)
-    .resize(1600, 1600, { fit: 'inside', withoutEnlargement: true })
-    .jpeg({ quality: 85 })
-    .toBuffer()
-
-  // Generate thumbnail (800px)
-  const thumbBuffer = await sharp(rotatedBuffer)
-    .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
-    .jpeg({ quality: 80 })
-    .toBuffer()
-
-  // Upload to OSS
+  // Upload all in parallel (original as-is, others as webp)
   const [originalPath, mediumPath, thumbnailPath] = await Promise.all([
-    uploadToOSS(buffer, `originals/${id}.${ext}`),
-    uploadToOSS(mediumBuffer, `medium/${id}.jpg`),
-    uploadToOSS(thumbBuffer, `thumbs/${id}.jpg`),
+    uploadToOSS(buffer, `originals/${id}.${originalExt}`),
+    uploadToOSS(mediumBuffer, `medium/${id}.webp`),
+    uploadToOSS(thumbBuffer, `thumbs/${id}.webp`),
   ])
 
   return { originalPath, mediumPath, thumbnailPath, width, height }

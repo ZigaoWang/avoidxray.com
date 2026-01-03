@@ -44,7 +44,7 @@ export default function UploadPage() {
     e.preventDefault()
     setIsDragging(false)
     const droppedFiles = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'))
-    if (droppedFiles.length) setFiles(droppedFiles)
+    if (droppedFiles.length) setFiles(prev => [...prev, ...droppedFiles])
   }, [])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -56,6 +56,10 @@ export default function UploadPage() {
     e.preventDefault()
     setIsDragging(false)
   }, [])
+
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index))
+  }
 
   if (status === 'loading') return null
   if (!session) {
@@ -69,30 +73,46 @@ export default function UploadPage() {
 
     setUploading(true)
 
-    let finalCameraId = cameraId
-    let finalFilmStockId = filmStockId
-
-    if (newCameraName && !cameraId) {
-      const res = await fetch('/api/cameras', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newCameraName })
-      })
-      const camera = await res.json()
-      finalCameraId = camera.id
+    // Resolve camera ID
+    let finalCameraId: string | null = null
+    if (cameraId) {
+      if (cameraId.startsWith('new-') && newCameraName) {
+        const res = await fetch('/api/cameras', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newCameraName })
+        })
+        if (res.ok) {
+          const camera = await res.json()
+          finalCameraId = camera.id
+        }
+      } else {
+        finalCameraId = cameraId
+      }
     }
 
-    if (newFilmName && !filmStockId) {
-      const res = await fetch('/api/filmstocks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newFilmName })
-      })
-      const filmStock = await res.json()
-      finalFilmStockId = filmStock.id
+    // Resolve film stock ID
+    let finalFilmStockId: string | null = null
+    if (filmStockId) {
+      if (filmStockId.startsWith('new-') && newFilmName) {
+        const res = await fetch('/api/filmstocks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newFilmName })
+        })
+        if (res.ok) {
+          const filmStock = await res.json()
+          finalFilmStockId = filmStock.id
+        }
+      } else {
+        finalFilmStockId = filmStockId
+      }
     }
 
+    // Upload files one by one
     for (let i = 0; i < files.length; i++) {
+      if (uploadStatus[i] === 'done') continue
+
       setUploadStatus(prev => prev.map((s, idx) => idx === i ? 'uploading' : s))
 
       const formData = new FormData()
@@ -110,12 +130,12 @@ export default function UploadPage() {
       }
     }
 
-    setTimeout(() => router.push('/'), 1000)
+    setUploading(false)
   }
 
   const handleCameraCreate = async (name: string) => {
     setNewCameraName(name)
-    const tempId = `new-${name}`
+    const tempId = `new-${Date.now()}`
     const temp = { id: tempId, name, brand: null }
     setCameras(prev => [...prev, temp])
     return temp
@@ -123,7 +143,7 @@ export default function UploadPage() {
 
   const handleFilmCreate = async (name: string) => {
     setNewFilmName(name)
-    const tempId = `new-${name}`
+    const tempId = `new-${Date.now()}`
     const temp = { id: tempId, name, brand: null }
     setFilmStocks(prev => [...prev, temp])
     return temp
@@ -140,6 +160,8 @@ export default function UploadPage() {
   }
 
   const doneCount = uploadStatus.filter(s => s === 'done').length
+  const errorCount = uploadStatus.filter(s => s === 'error').length
+  const allDone = doneCount === files.length && files.length > 0
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
@@ -162,7 +184,7 @@ export default function UploadPage() {
               type="file"
               multiple
               accept="image/*"
-              onChange={e => setFiles(Array.from(e.target.files || []))}
+              onChange={e => setFiles(prev => [...prev, ...Array.from(e.target.files || [])])}
               className="hidden"
               id="file-input"
               disabled={uploading}
@@ -174,7 +196,7 @@ export default function UploadPage() {
                   <p className="text-neutral-600 text-xs">JPG, PNG, TIFF</p>
                 </>
               ) : (
-                <p className="text-white font-medium">{files.length} file{files.length > 1 ? 's' : ''} selected</p>
+                <p className="text-white font-medium">{files.length} file{files.length > 1 ? 's' : ''} selected • Click to add more</p>
               )}
             </label>
           </div>
@@ -182,8 +204,19 @@ export default function UploadPage() {
           {previews.length > 0 && (
             <div className="grid grid-cols-4 gap-2">
               {previews.map((url, i) => (
-                <div key={i} className="aspect-square overflow-hidden bg-neutral-900 relative">
+                <div key={i} className="aspect-square overflow-hidden bg-neutral-900 relative group">
                   <img src={url} alt="" className="w-full h-full object-cover" />
+                  {!uploading && uploadStatus[i] === 'pending' && (
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      className="absolute top-1 right-1 w-5 h-5 bg-black/80 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
                   {uploadStatus[i] === 'uploading' && (
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -245,13 +278,27 @@ export default function UploadPage() {
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={uploading || !files.length}
-            className="w-full bg-[#D32F2F] text-white py-4 text-sm font-bold uppercase tracking-wider hover:bg-[#B71C1C] disabled:opacity-30 transition-colors"
-          >
-            {uploading ? `Uploading ${doneCount}/${files.length}` : 'Upload'}
-          </button>
+          {allDone ? (
+            <button
+              type="button"
+              onClick={() => router.push('/')}
+              className="w-full bg-green-600 text-white py-4 text-sm font-bold uppercase tracking-wider hover:bg-green-700 transition-colors"
+            >
+              Done! Go to Home
+            </button>
+          ) : (
+            <button
+              type="submit"
+              disabled={uploading || !files.length}
+              className="w-full bg-[#D32F2F] text-white py-4 text-sm font-bold uppercase tracking-wider hover:bg-[#B71C1C] disabled:opacity-30 transition-colors"
+            >
+              {uploading
+                ? `Uploading ${doneCount}/${files.length}`
+                : errorCount > 0
+                  ? `Retry ${errorCount} Failed`
+                  : 'Upload'}
+            </button>
+          )}
         </form>
       </main>
 
