@@ -37,6 +37,7 @@ export default function UploadPage() {
   const [previews, setPreviews] = useState<string[]>([])
   const [uploadStatus, setUploadStatus] = useState<UploadStatus[]>([])
   const [photoIds, setPhotoIds] = useState<(string | null)[]>([])
+  const photoIdsRef = useRef<(string | null)[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null)
   const [publishing, setPublishing] = useState(false)
@@ -73,9 +74,14 @@ export default function UploadPage() {
   const uploadFiles = useCallback(async (files: File[]) => {
     if (!files.length) return
     const startIdx = previews.length
+
+    // Initialize arrays for new files
+    const newNulls = files.map(() => null)
+    photoIdsRef.current = [...photoIdsRef.current, ...newNulls]
+
     setPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))])
     setUploadStatus(prev => [...prev, ...files.map(() => 'uploading' as UploadStatus)])
-    setPhotoIds(prev => [...prev, ...files.map(() => null)])
+    setPhotoIds(prev => [...prev, ...newNulls])
     setIndividualMeta(prev => [...prev, ...files.map(() => ({ caption: '', cameraId: '', filmStockId: '', tags: [] }))])
 
     await Promise.all(files.map(async (file, i) => {
@@ -87,7 +93,8 @@ export default function UploadPage() {
         const res = await fetch('/api/upload', { method: 'POST', body: formData })
         if (res.ok) {
           const data = await res.json()
-          setPhotoIds(prev => prev.map((id, j) => j === idx ? data.photos[0].id : id))
+          photoIdsRef.current[idx] = data.photos[0].id
+          setPhotoIds([...photoIdsRef.current])
           setUploadStatus(prev => prev.map((s, j) => j === idx ? 'done' : s))
         } else {
           setUploadStatus(prev => prev.map((s, j) => j === idx ? 'error' : s))
