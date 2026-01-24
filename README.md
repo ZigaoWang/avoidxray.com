@@ -1,8 +1,6 @@
-<div align="center">
-  <img src="public/logo.svg" alt="Logo" width="200"/>
-</div>
+<img src="public/logo.svg" alt="Logo" width="200"/>
 
-# AvoidXray
+# AvoidXRay
 
 A film photography community platform for sharing and discovering analog photography.
 
