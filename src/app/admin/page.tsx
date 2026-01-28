@@ -9,6 +9,8 @@ import Footer from '@/components/Footer'
 import AdminActions from './AdminActions'
 import BatchPhotoManager from './BatchPhotoManager'
 import MetadataManager from './MetadataManager'
+import CleanupButton from './CleanupButton'
+import OSSSyncButton from './OSSSyncButton'
 
 export default async function AdminPage() {
   const session = await getServerSession(authOptions)
@@ -19,12 +21,13 @@ export default async function AdminPage() {
   const user = await prisma.user.findUnique({ where: { id: userId } })
   if (!user?.isAdmin) redirect('/')
 
-  const [users, photos, comments, stats, cameras, filmStocks, tags] = await Promise.all([
+  const [users, photos, comments, stats, cameras, filmStocks, tags, unpublishedCount] = await Promise.all([
     prisma.user.findMany({
       include: { _count: { select: { photos: true, comments: true } } },
       orderBy: { createdAt: 'desc' }
     }),
     prisma.photo.findMany({
+      where: { published: true },
       include: { user: true, camera: true, filmStock: true, tags: { include: { tag: true } }, _count: { select: { likes: true, comments: true } } },
       orderBy: { createdAt: 'desc' }
     }),
@@ -35,13 +38,14 @@ export default async function AdminPage() {
     }),
     Promise.all([
       prisma.user.count(),
-      prisma.photo.count(),
+      prisma.photo.count({ where: { published: true } }),
       prisma.comment.count(),
       prisma.like.count()
     ]),
     prisma.camera.findMany({ include: { _count: { select: { photos: true } } }, orderBy: { name: 'asc' } }),
     prisma.filmStock.findMany({ include: { _count: { select: { photos: true } } }, orderBy: { name: 'asc' } }),
-    prisma.tag.findMany({ include: { _count: { select: { photos: true } } }, orderBy: { name: 'asc' } })
+    prisma.tag.findMany({ include: { _count: { select: { photos: true } } }, orderBy: { name: 'asc' } }),
+    prisma.photo.count({ where: { published: false } })
   ])
 
   return (
@@ -53,7 +57,7 @@ export default async function AdminPage() {
           <p className="text-neutral-500 mb-8">Manage users, photos, and content</p>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
             <div className="bg-neutral-900 p-4">
               <div className="text-2xl font-bold text-white">{stats[0]}</div>
               <div className="text-neutral-500 text-sm">Users</div>
@@ -70,6 +74,20 @@ export default async function AdminPage() {
               <div className="text-2xl font-bold text-white">{stats[3]}</div>
               <div className="text-neutral-500 text-sm">Likes</div>
             </div>
+            <div className="bg-neutral-900 p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-2xl font-bold text-yellow-500">{unpublishedCount}</div>
+                  <div className="text-neutral-500 text-sm">Unpublished</div>
+                </div>
+                {unpublishedCount > 0 && <CleanupButton />}
+              </div>
+            </div>
+          </div>
+
+          {/* Storage Sync */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
+            <OSSSyncButton />
           </div>
 
           {/* Users */}

@@ -55,18 +55,20 @@ export default function UploadPage() {
     fetch('/api/filmstocks').then(r => r.json()).then(setFilmStocks)
   }, [])
 
-  // Cleanup unpublished photos on page leave
+  // Cleanup unpublished photos on unmount (client-side navigation)
   useEffect(() => {
-    const cleanup = () => {
+    return () => {
       if (publishedRef.current) return
       const ids = photoIdsRef.current.filter(id => id)
       if (ids.length > 0) {
-        navigator.sendBeacon('/api/upload/cleanup', JSON.stringify({ ids }))
+        // Use fetch for client-side navigation cleanup
+        fetch('/api/upload/cleanup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ids }),
+          keepalive: true
+        }).catch(() => {})
       }
-    }
-    window.addEventListener('beforeunload', cleanup)
-    return () => {
-      window.removeEventListener('beforeunload', cleanup)
     }
   }, [])
 
