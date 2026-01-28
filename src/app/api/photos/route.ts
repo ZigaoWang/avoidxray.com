@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   // For recent/following, use DB ordering
   if (tab === 'recent' || tab === 'following') {
     const photos = await prisma.photo.findMany({
-      where: tab === 'following' && userId ? { userId: { in: followingIds } } : undefined,
+      where: { published: true, ...(tab === 'following' && userId ? { userId: { in: followingIds } } : {}) },
       include: { user: true, filmStock: true, camera: true, _count: { select: { likes: true } } },
       orderBy: { createdAt: 'desc' },
       skip: offset,
@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
 
   // For trending, fetch all and sort by score (not ideal for large datasets but works for now)
   const allPhotos = await prisma.photo.findMany({
+    where: { published: true },
     include: { user: true, filmStock: true, camera: true, _count: { select: { likes: true } } }
   })
 

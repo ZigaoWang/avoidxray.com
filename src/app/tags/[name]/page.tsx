@@ -20,6 +20,7 @@ export default async function TagPage({ params }: { params: Promise<{ name: stri
             }
           }
         },
+        where: { photo: { published: true } },
         orderBy: { photo: { createdAt: 'desc' } }
       },
       _count: { select: { photos: true } }

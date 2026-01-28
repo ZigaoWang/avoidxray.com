@@ -41,7 +41,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             photo: {
               include: { user: true, filmStock: true, _count: { select: { likes: true } } }
             }
-          }
+          },
+          where: { photo: { published: true } }
         }
       }
     })
@@ -50,7 +51,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
     }
   } else {
     // Regular search with filters
-    const photoWhere: any = { caption: { contains: query } }
+    const photoWhere: any = { published: true, caption: { contains: query } }
     if (film) photoWhere.filmStockId = film
     if (camera) photoWhere.cameraId = camera
 

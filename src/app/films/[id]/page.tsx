@@ -11,7 +11,7 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
   const filmStock = await prisma.filmStock.findUnique({
     where: { id },
     include: {
-      photos: { orderBy: { createdAt: 'desc' }, include: { camera: true, user: true } }
+      photos: { where: { published: true }, orderBy: { createdAt: 'desc' }, include: { camera: true, user: true } }
     }
   })
 

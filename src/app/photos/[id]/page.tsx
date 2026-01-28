@@ -28,17 +28,17 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
     where: { userId_photoId: { userId, photoId: id } }
   }) : null
 
-  if (!photo) notFound()
+  if (!photo || !photo.published) notFound()
 
   // Get prev/next photos
   const [prevPhoto, nextPhoto] = await Promise.all([
     prisma.photo.findFirst({
-      where: { createdAt: { gt: photo.createdAt } },
+      where: { published: true, createdAt: { gt: photo.createdAt } },
       orderBy: { createdAt: 'asc' },
       select: { id: true }
     }),
     prisma.photo.findFirst({
-      where: { createdAt: { lt: photo.createdAt } },
+      where: { published: true, createdAt: { lt: photo.createdAt } },
       orderBy: { createdAt: 'desc' },
       select: { id: true }
     })
@@ -57,6 +57,7 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
   const relatedPhotos = await prisma.photo.findMany({
     where: {
       id: { not: photo.id },
+      published: true,
       OR: [
         { filmStockId: photo.filmStockId },
         { cameraId: photo.cameraId }

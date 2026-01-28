@@ -15,9 +15,10 @@ export default async function Home() {
 
   const [allPhotos, totalPhotos, filmStockCount, cameraCount] = await Promise.all([
     prisma.photo.findMany({
+      where: { published: true },
       include: { filmStock: true, camera: true, user: true, _count: { select: { likes: true } } }
     }),
-    prisma.photo.count(),
+    prisma.photo.count({ where: { published: true } }),
     prisma.filmStock.count(),
     prisma.camera.count()
   ])

@@ -17,10 +17,11 @@ export default async function UserPage({ params }: { params: Promise<{ username:
     where: { username },
     include: {
       photos: {
+        where: { published: true },
         orderBy: { createdAt: 'desc' },
         include: { filmStock: true, camera: true, _count: { select: { likes: true } } }
       },
-      _count: { select: { photos: true, followers: true, following: true } }
+      _count: { select: { photos: { where: { published: true } }, followers: true, following: true } }
     }
   })
 

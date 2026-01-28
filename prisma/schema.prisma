@@ -50,6 +50,7 @@ model Photo {
   camera        Camera?    @relation(fields: [cameraId], references: [id])
   filmStockId   String?
   filmStock     FilmStock? @relation(fields: [filmStockId], references: [id])
+  published     Boolean    @default(false)
   createdAt     DateTime   @default(now())
   likes         Like[]
   comments      Comment[]

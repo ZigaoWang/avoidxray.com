@@ -92,7 +92,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const updated = await prisma.photo.update({
     where: { id },
-    data: { caption, cameraId: cameraId || null, filmStockId: filmStockId || null }
+    data: { caption, cameraId: cameraId || null, filmStockId: filmStockId || null, published: true }
   })
 
   return NextResponse.json(updated)

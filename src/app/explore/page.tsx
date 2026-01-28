@@ -24,7 +24,7 @@ export default async function ExplorePage({ searchParams }: { searchParams: Prom
   const followingIds = following.map(f => f.followingId)
 
   let photos = await prisma.photo.findMany({
-    where: tab === 'following' && userId ? { userId: { in: followingIds } } : undefined,
+    where: { published: true, ...(tab === 'following' && userId ? { userId: { in: followingIds } } : {}) },
     include: { user: true, filmStock: true, camera: true, _count: { select: { likes: true } } },
     take: 21
   })

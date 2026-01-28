@@ -11,7 +11,7 @@ export default async function CameraDetailPage({ params }: { params: Promise<{ i
   const camera = await prisma.camera.findUnique({
     where: { id },
     include: {
-      photos: { orderBy: { createdAt: 'desc' }, include: { filmStock: true, user: true } }
+      photos: { where: { published: true }, orderBy: { createdAt: 'desc' }, include: { filmStock: true, user: true } }
     }
   })
 

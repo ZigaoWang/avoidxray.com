@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   const [photos, users, cameras, films] = await Promise.all([
     prisma.photo.findMany({
-      where: { caption: { contains: q } },
+      where: { published: true, caption: { contains: q } },
       select: { id: true, thumbnailPath: true, caption: true },
       take: limit
     }),

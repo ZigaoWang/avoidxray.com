@@ -21,6 +21,7 @@ export default async function CollectionPage({ params }: { params: Promise<{ id:
             }
           }
         },
+        where: { photo: { published: true } },
         orderBy: { order: 'asc' }
       },
       _count: { select: { photos: true } }
