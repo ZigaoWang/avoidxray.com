@@ -5,7 +5,7 @@ import { prisma } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const tab = searchParams.get('tab') || 'trending'
+  const tab = searchParams.get('tab') || 'recent'
   const offset = parseInt(searchParams.get('offset') || '0')
   const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50)
 
@@ -21,12 +21,18 @@ export async function GET(req: NextRequest) {
     followingIds = following.map(f => f.followingId)
   }
 
-  // For recent/following, use DB ordering
-  if (tab === 'recent' || tab === 'following') {
+  // Build where clause
+  const where = {
+    published: true,
+    ...(tab === 'following' && userId ? { userId: { in: followingIds } } : {})
+  }
+
+  // Popular: order by likes count
+  if (tab === 'popular') {
     const photos = await prisma.photo.findMany({
-      where: { published: true, ...(tab === 'following' && userId ? { userId: { in: followingIds } } : {}) },
+      where,
       include: { user: true, filmStock: true, camera: true, _count: { select: { likes: true } } },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { likes: { _count: 'desc' } },
       skip: offset,
       take: limit + 1
     })
@@ -38,24 +44,18 @@ export async function GET(req: NextRequest) {
     })
   }
 
-  // For trending, fetch all and sort by score (not ideal for large datasets but works for now)
-  const allPhotos = await prisma.photo.findMany({
-    where: { published: true },
-    include: { user: true, filmStock: true, camera: true, _count: { select: { likes: true } } }
+  // Recent/Following: order by createdAt
+  const photos = await prisma.photo.findMany({
+    where,
+    include: { user: true, filmStock: true, camera: true, _count: { select: { likes: true } } },
+    orderBy: { createdAt: 'desc' },
+    skip: offset,
+    take: limit + 1
   })
 
-  const now = Date.now()
-  const sorted = allPhotos
-    .map(p => ({
-      ...p,
-      score: p._count.likes + Math.max(0, 7 - Math.floor((now - new Date(p.createdAt).getTime()) / (1000 * 60 * 60 * 24)))
-    }))
-    .sort((a, b) => b.score - a.score)
-    .slice(offset, offset + limit + 1)
-
-  const hasMore = sorted.length > limit
+  const hasMore = photos.length > limit
   return NextResponse.json({
-    photos: hasMore ? sorted.slice(0, limit) : sorted,
+    photos: hasMore ? photos.slice(0, limit) : photos,
     nextOffset: hasMore ? offset + limit : null
   })
 }

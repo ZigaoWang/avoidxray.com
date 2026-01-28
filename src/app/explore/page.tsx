@@ -6,12 +6,8 @@ import PhotoGrid from '@/components/PhotoGrid'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
-function daysSince(date: Date) {
-  return Math.floor((Date.now() - new Date(date).getTime()) / (1000 * 60 * 60 * 24))
-}
-
 export default async function ExplorePage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
-  const { tab = 'trending' } = await searchParams
+  const { tab = 'recent' } = await searchParams
   const session = await getServerSession(authOptions)
   const userId = (session?.user as { id?: string } | undefined)?.id
 
@@ -23,9 +19,17 @@ export default async function ExplorePage({ searchParams }: { searchParams: Prom
     : []
   const followingIds = following.map(f => f.followingId)
 
-  let photos = await prisma.photo.findMany({
-    where: { published: true, ...(tab === 'following' && userId ? { userId: { in: followingIds } } : {}) },
+  // Build where clause
+  const where = {
+    published: true,
+    ...(tab === 'following' && userId ? { userId: { in: followingIds } } : {})
+  }
+
+  // Always order by createdAt desc for consistent pagination
+  const photos = await prisma.photo.findMany({
+    where,
     include: { user: true, filmStock: true, camera: true, _count: { select: { likes: true } } },
+    orderBy: { createdAt: 'desc' },
     take: 21
   })
 
@@ -35,22 +39,13 @@ export default async function ExplorePage({ searchParams }: { searchParams: Prom
   }) : []
   const likedIds = new Set(userLikes.map(l => l.photoId))
 
-  if (tab === 'trending') {
-    photos = photos.map(p => ({
-      ...p,
-      score: p._count.likes + Math.max(0, 7 - daysSince(p.createdAt))
-    })).sort((a, b) => (b as typeof b & { score: number }).score - (a as typeof a & { score: number }).score)
-  } else {
-    photos.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  }
-
   const hasMore = photos.length > 20
   const initialPhotos = (hasMore ? photos.slice(0, 20) : photos).map(p => ({ ...p, liked: likedIds.has(p.id) }))
   const nextOffset = hasMore ? 20 : null
 
   const tabs = [
-    { id: 'trending', label: 'Trending' },
     { id: 'recent', label: 'Recent' },
+    { id: 'popular', label: 'Popular' },
     ...(userId ? [{ id: 'following', label: 'Following' }] : [])
   ]
 

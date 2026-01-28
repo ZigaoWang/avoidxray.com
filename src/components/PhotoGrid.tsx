@@ -51,11 +51,16 @@ export default function PhotoGrid({ initialPhotos, initialOffset, tab }: PhotoGr
     const data = await res.json()
 
     if (data.photos.length > 0) {
-      setPhotos(prev => [...prev, ...data.photos])
+      // Filter out duplicates
+      const existingIds = new Set(photos.map(p => p.id))
+      const newPhotos = data.photos.filter((p: Photo) => !existingIds.has(p.id))
+      if (newPhotos.length > 0) {
+        setPhotos(prev => [...prev, ...newPhotos])
+      }
     }
     setOffset(data.nextOffset)
     setLoading(false)
-  }, [offset, loading, tab])
+  }, [offset, loading, tab, photos])
 
   useEffect(() => {
     const observer = new IntersectionObserver(
