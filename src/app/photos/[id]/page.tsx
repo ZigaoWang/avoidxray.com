@@ -11,6 +11,7 @@ import LikeButton from '@/components/LikeButton'
 import CommentSection from '@/components/CommentSection'
 import TagList from '@/components/TagList'
 import Lightbox from '@/components/Lightbox'
+import WatermarkButton from '@/components/WatermarkButton'
 import path from 'path'
 
 import { stat } from 'fs/promises'
@@ -216,6 +217,12 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
                 >
                   View Original
                 </a>
+
+                <WatermarkButton
+                  photoId={photo.id}
+                  camera={photo.camera?.name}
+                  filmStock={photo.filmStock?.name}
+                />
               </div>
 
               {/* Actions */}

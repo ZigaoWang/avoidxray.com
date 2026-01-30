@@ -1,0 +1,528 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/db'
+import sharp from 'sharp'
+import fs from 'fs'
+import path from 'path'
+import QRCode from 'qrcode'
+
+type WatermarkStyle = 'minimal' | 'film-strip' | 'polaroid'
+
+// Correct logo from public/logo.svg
+const LOGO_SVG = `<svg width="307" height="56" viewBox="0 0 307 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M0 0H150V56H0V0Z" fill="#D32F2F"/>
+<path d="M157 0H307V56H157V0Z" fill="white"/>
+<path d="M174 43.4383L185.053 25.2344L183.302 31.6047V28.0187L174.021 13H183.07L188.639 23.2937H192.225L187.226 26.3523L194.398 13H203.025L193.322 28.1031V31.6891L191.508 25.3398L202.92 43.4383H194.229L188.323 33.5664H184.737L189.863 30.6133L182.248 43.4383H174Z" fill="black"/>
+<path d="M212.013 43.4383V13H225.197C227.658 13 229.746 13.3937 231.462 14.1812C233.178 14.9687 234.485 16.1148 235.385 17.6195C236.285 19.1242 236.735 20.9523 236.735 23.1039V23.1461C236.735 25.1008 236.264 26.8586 235.322 28.4195C234.38 29.9805 233.121 31.1125 231.546 31.8156L237.621 43.4383H228.91L223.699 32.9547C223.657 32.9547 223.601 32.9547 223.531 32.9547C223.474 32.9547 223.411 32.9547 223.341 32.9547H219.755V43.4383H212.013ZM219.755 27.3438H224.332C225.71 27.3438 226.8 26.9641 227.602 26.2047C228.417 25.4312 228.825 24.4047 228.825 23.125V23.0828C228.825 21.8031 228.41 20.7766 227.581 20.0031C226.751 19.2297 225.654 18.843 224.29 18.843H219.755V27.3438Z" fill="black"/>
+<path d="M237.633 43.4383L247.885 13H255.014V19.6234H252.546L245.775 43.4383H237.633ZM243.624 36.7727L245.353 31.1828H259.908L261.638 36.7727H243.624ZM259.486 43.4383L252.694 19.6234V13H257.377L267.628 43.4383H259.486Z" fill="black"/>
+<path d="M273.61 43.4383V32.9969L263.126 13H271.374L277.407 25.6562H277.575L283.587 13H291.856L281.351 32.9969V43.4383H273.61Z" fill="black"/>
+<path d="M30.2289 19.3195L24.4281 30.7102H31.2414L30.3977 19.3195H30.2289ZM32.0641 42.9656L31.5578 36.2789H21.6227L18.1844 42.9656H10L26.9594 12.5273H36.4305L39.932 42.9656H32.0641Z" fill="white"/>
+<path d="M54.2665 42.9656H44.7954L41.2938 12.5273H49.7946L50.997 34.9078H51.1446L61.6915 12.5273H70.4454L54.2665 42.9656Z" fill="white"/>
+<path d="M83.1978 18.2859C82.0025 18.2859 80.8846 18.5883 79.8439 19.193C78.8033 19.7977 77.8892 20.6414 77.1017 21.7242C76.3142 22.793 75.7025 24.0375 75.2666 25.4578C74.8307 26.8641 74.6127 28.3828 74.6127 30.0141C74.6127 31.4625 74.8517 32.7281 75.3299 33.8109C75.8221 34.8937 76.5111 35.7305 77.3971 36.3211C78.2971 36.9117 79.3517 37.207 80.5611 37.207C81.7564 37.207 82.8744 36.9047 83.915 36.3C84.9697 35.6953 85.8838 34.8586 86.6572 33.7898C87.4447 32.707 88.0564 31.4555 88.4924 30.0352C88.9424 28.6148 89.1674 27.0961 89.1674 25.4789C89.1674 24.0023 88.9213 22.7297 88.4291 21.6609C87.9369 20.5781 87.2408 19.7484 86.3408 19.1719C85.4549 18.5813 84.4072 18.2859 83.1978 18.2859ZM80.3502 43.493C77.5377 43.493 75.1119 42.9305 73.0728 41.8055C71.0338 40.6805 69.4658 39.1406 68.3689 37.1859C67.2861 35.2172 66.7447 32.9742 66.7447 30.457C66.7447 27.743 67.1666 25.2609 68.0103 23.0109C68.8682 20.7469 70.0494 18.7992 71.5541 17.168C73.0728 15.5227 74.8377 14.25 76.8486 13.35C78.8736 12.45 81.0463 12 83.3666 12C86.2494 12 88.7033 12.5695 90.7283 13.7086C92.7674 14.8336 94.3213 16.3734 95.39 18.3281C96.4728 20.2828 97.0142 22.5187 97.0142 25.0359C97.0142 27.7641 96.5853 30.2602 95.7275 32.5242C94.8838 34.7742 93.6955 36.7219 92.1627 38.3672C90.6439 39.9984 88.8721 41.2641 86.8471 42.1641C84.8361 43.05 82.6705 43.493 80.3502 43.493Z" fill="white"/>
+<path d="M104.092 42.9656H96.3511L102.827 12.5273H110.568L104.092 42.9656Z" fill="white"/>
+<path d="M114.145 12.5273H125.894C128.327 12.5273 130.464 12.9984 132.307 13.9406C134.163 14.8688 135.604 16.2117 136.631 17.9695C137.671 19.7273 138.192 21.8508 138.192 24.3398C138.192 27.068 137.805 29.5641 137.032 31.8281C136.272 34.0922 135.175 36.0609 133.741 37.7344C132.321 39.3937 130.619 40.6805 128.636 41.5945C126.653 42.5086 124.46 42.9656 122.055 42.9656H107.669L114.145 12.5273ZM120.621 18.7289L116.803 36.7641H121C122.35 36.7641 123.588 36.4969 124.713 35.9625C125.838 35.4281 126.808 34.6617 127.624 33.6633C128.453 32.6648 129.093 31.4625 129.543 30.0562C130.007 28.65 130.239 27.068 130.239 25.3102C130.239 23.9461 130 22.7719 129.522 21.7875C129.044 20.8031 128.348 20.0508 127.434 19.5305C126.534 18.9961 125.43 18.7289 124.122 18.7289H120.621Z" fill="white"/>
+</svg>`
+
+// Load inverted logo from file
+const LOGO_SVG_INVERTED = fs.readFileSync(path.join(process.cwd(), 'public', 'logo-inverted.svg'), 'utf-8')
+
+// Load square favicon logo
+const FAVICON_SVG = fs.readFileSync(path.join(process.cwd(), 'public', 'favicon', 'favicon.svg'), 'utf-8')
+
+async function fetchImage(url: string): Promise<Buffer> {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error('Failed to fetch image')
+  return Buffer.from(await response.arrayBuffer())
+}
+
+// Create text SVG with proper font styling
+function createTextSvg(
+  text: string,
+  fontSize: number,
+  color: string,
+  options: { weight?: number; letterSpacing?: number; align?: 'left' | 'center' | 'right'; width?: number; fontStyle?: 'sans' | 'handwritten' | 'mono' } = {}
+): string {
+  const { weight = 400, letterSpacing = 0, align = 'left', width, fontStyle = 'sans' } = options
+  const estimatedWidth = width || Math.ceil(text.length * fontSize * 0.7)
+  const height = Math.ceil(fontSize * 1.4)
+
+  let x = 0
+  let anchor = 'start'
+  if (align === 'center') {
+    x = estimatedWidth / 2
+    anchor = 'middle'
+  } else if (align === 'right') {
+    x = estimatedWidth
+    anchor = 'end'
+  }
+
+  // Font selection
+  let fontFamily = "'Helvetica Neue', 'Arial', sans-serif"
+  let fontImport = ''
+
+  if (fontStyle === 'handwritten') {
+    // Use Kalam for better handwritten look
+    fontImport = `<defs><style>@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&amp;display=swap');</style></defs>`
+    fontFamily = "'Kalam', cursive"
+  } else if (fontStyle === 'mono') {
+    fontFamily = "'Courier New', 'Courier', monospace"
+  }
+
+  return `<svg width="${estimatedWidth}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    ${fontImport}
+    <text x="${x}" y="${fontSize * 1.05}" font-size="${fontSize}" font-weight="${weight}" fill="${color}" text-anchor="${anchor}" letter-spacing="${letterSpacing}" font-family="${fontFamily}">${escapeXml(text)}</text>
+  </svg>`
+}
+
+function escapeXml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+export async function GET(req: NextRequest) {
+  const { searchParams } = new URL(req.url)
+  const photoId = searchParams.get('id')
+  const style = (searchParams.get('style') || 'minimal') as WatermarkStyle
+  const isPreview = searchParams.get('preview') === '1'
+
+  // Customization options
+  const showCamera = searchParams.get('showCamera') !== '0'
+  const showFilm = searchParams.get('showFilm') !== '0'
+  const showUsername = searchParams.get('showUsername') !== '0'
+  const showDate = searchParams.get('showDate') === '1'
+  const showQR = searchParams.get('showQR') === '1'
+  const showCaption = searchParams.get('showCaption') !== '0'
+  const customDate = searchParams.get('customDate') || ''
+  const customCaption = searchParams.get('caption') || 'Shot on film'
+
+  // Get base URL from request
+  const baseUrl = `${req.nextUrl.protocol}//${req.nextUrl.host}`
+
+  if (!photoId) {
+    return NextResponse.json({ error: 'Photo ID required' }, { status: 400 })
+  }
+
+  const photo = await prisma.photo.findUnique({
+    where: { id: photoId },
+    include: { camera: true, filmStock: true, user: true }
+  })
+
+  if (!photo) {
+    return NextResponse.json({ error: 'Photo not found' }, { status: 404 })
+  }
+
+  try {
+    // Fetch the original image
+    const imageBuffer = await fetchImage(photo.originalPath)
+    let image = sharp(imageBuffer)
+    const metadata = await image.metadata()
+    let imgWidth = metadata.width || 1600
+    let imgHeight = metadata.height || 1200
+
+    // For preview, resize to smaller size for faster loading
+    if (isPreview) {
+      const maxPreviewSize = 800
+      if (imgWidth > maxPreviewSize || imgHeight > maxPreviewSize) {
+        const scale = Math.min(maxPreviewSize / imgWidth, maxPreviewSize / imgHeight)
+        imgWidth = Math.round(imgWidth * scale)
+        imgHeight = Math.round(imgHeight * scale)
+        image = sharp(await image.resize(imgWidth, imgHeight, { fit: 'inside' }).toBuffer())
+      }
+    }
+
+    const camera = showCamera ? (photo.camera?.name || '') : ''
+    const film = showFilm ? (photo.filmStock?.name || '') : ''
+    const username = showUsername ? photo.user.username : ''
+
+    // Format date properly
+    let date = ''
+    if (showDate) {
+      if (customDate) {
+        // Parse the date from YYYY-MM-DD format
+        const dateObj = new Date(customDate + 'T00:00:00')
+        date = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+      } else {
+        date = new Date(photo.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+      }
+    }
+
+    let result: sharp.Sharp
+
+    switch (style) {
+      case 'minimal':
+        result = await createMinimalWatermark(image, imgWidth, imgHeight, camera, film)
+        break
+      case 'film-strip':
+        result = await createFilmStripWatermark(image, imgWidth, imgHeight, camera, film, username)
+        break
+      case 'polaroid':
+        result = await createPolaroidWatermark(image, imgWidth, imgHeight, camera, film, username, showCaption ? customCaption : '', date, showQR, photoId, baseUrl)
+        break
+      default:
+        result = await createMinimalWatermark(image, imgWidth, imgHeight, camera, film)
+    }
+
+    // Use high quality for full download, lower for preview
+    const quality = isPreview ? 85 : 98
+    const outputBuffer = await result.jpeg({ quality, mozjpeg: true }).toBuffer()
+
+    return new NextResponse(new Uint8Array(outputBuffer), {
+      headers: {
+        'Content-Type': 'image/jpeg',
+        'Content-Disposition': isPreview ? 'inline' : `attachment; filename="avoidxray-${photoId}.jpg"`,
+        'Cache-Control': isPreview ? 'private, max-age=60' : 'no-store'
+      }
+    })
+  } catch (error) {
+    console.error('Watermark generation error:', error)
+    return NextResponse.json({ error: 'Failed to generate watermark' }, { status: 500 })
+  }
+}
+
+async function createMinimalWatermark(image: sharp.Sharp, w: number, h: number, camera: string, film: string) {
+  const barHeight = Math.max(90, Math.round(h * 0.08))
+  const fontSize = Math.round(barHeight * 0.28)
+  const logoHeight = Math.round(barHeight * 0.5)
+  const padding = Math.round(barHeight * 0.4)
+
+  // Create info text
+  let infoText = ''
+  if (camera) infoText += camera
+  if (camera && film) infoText += '  •  '
+  if (film) infoText += film
+
+  // Create logo
+  const logoSvg = Buffer.from(LOGO_SVG)
+  const logoBuffer = await sharp(logoSvg).resize({ height: logoHeight }).png().toBuffer()
+  const logoMeta = await sharp(logoBuffer).metadata()
+  const logoWidth = logoMeta.width || 150
+
+  const composites: sharp.OverlayOptions[] = []
+
+  // Add info text if available
+  if (infoText) {
+    const infoSvg = Buffer.from(createTextSvg(infoText, fontSize, '#CCCCCC', { weight: 500, letterSpacing: 1 }))
+    const infoMeta = await sharp(infoSvg).metadata()
+    composites.push({
+      input: infoSvg,
+      left: padding,
+      top: Math.round((barHeight - (infoMeta.height || fontSize)) / 2)
+    })
+  }
+
+  // Always add logo
+  composites.push({
+    input: logoBuffer,
+    left: w - logoWidth - padding,
+    top: Math.round((barHeight - logoHeight) / 2)
+  })
+
+  // Create bottom bar
+  const bar = await sharp({
+    create: { width: w, height: barHeight, channels: 4, background: { r: 10, g: 10, b: 10, alpha: 1 } }
+  })
+    .composite(composites)
+    .png()
+    .toBuffer()
+
+  // Combine image with bar
+  return sharp({
+    create: { width: w, height: h + barHeight, channels: 3, background: { r: 10, g: 10, b: 10 } }
+  }).composite([
+    { input: await image.toBuffer(), top: 0, left: 0 },
+    { input: bar, top: h, left: 0 }
+  ])
+}
+
+async function createFilmStripWatermark(image: sharp.Sharp, w: number, h: number, camera: string, film: string, username: string) {
+  const borderSize = Math.max(60, Math.round(w * 0.04))
+  const holeSize = Math.round(borderSize * 0.35)
+  const holeHeight = Math.round(holeSize * 0.6)
+  const holeGap = Math.round(borderSize * 0.8)
+  const totalW = w + borderSize * 2
+  const totalH = h + Math.round(borderSize * 0.8)
+
+  // Create film strip background with authentic film color
+  const filmBg = sharp({
+    create: { width: totalW, height: totalH, channels: 3, background: { r: 35, g: 32, b: 28 } }
+  })
+
+  // Create sprocket holes
+  const holes: sharp.OverlayOptions[] = []
+  const holesCount = Math.floor(totalH / holeGap)
+  const holeBuffer = await sharp({
+    create: { width: holeSize, height: holeHeight, channels: 3, background: { r: 10, g: 10, b: 10 } }
+  }).png().toBuffer()
+
+  for (let i = 0; i < holesCount; i++) {
+    const y = Math.round(i * holeGap + holeGap / 2)
+    holes.push({
+      input: holeBuffer,
+      left: Math.round((borderSize - holeSize) / 2),
+      top: y
+    })
+    holes.push({
+      input: holeBuffer,
+      left: totalW - Math.round((borderSize + holeSize) / 2),
+      top: y
+    })
+  }
+
+  // Film edge text with mono font for technical authenticity
+  const fontSize = Math.round(borderSize * 0.26)
+  const filmText = film?.toUpperCase() || ''
+  const textPadding = Math.round(borderSize * 0.3)
+
+  const composites: sharp.OverlayOptions[] = [...holes]
+  composites.push({ input: await image.toBuffer(), left: borderSize, top: Math.round(borderSize * 0.4) })
+
+  // Only add text if there's content
+  if (filmText) {
+    const topLeftText = Buffer.from(createTextSvg(filmText, fontSize, '#F4E5C2', { weight: 700, letterSpacing: 2, fontStyle: 'mono' }))
+    composites.push({ input: topLeftText, left: borderSize + textPadding, top: 5 })
+  }
+
+  // Always show AVOID X RAY on top right
+  const topRightText = Buffer.from(createTextSvg('AVOID X RAY', fontSize, '#F4E5C2', { weight: 700, letterSpacing: 2, fontStyle: 'mono' }))
+  const topRightMeta = await sharp(topRightText).metadata()
+  const topRightWidth = topRightMeta.width || 100
+  composites.push({ input: topRightText, left: totalW - borderSize - topRightWidth - textPadding, top: 5 })
+
+  // Bottom left - username or blank
+  if (username) {
+    const bottomLeftText = Buffer.from(createTextSvg(`@${username}`, fontSize, '#F4E5C2', { weight: 700, letterSpacing: 1, fontStyle: 'mono' }))
+    composites.push({ input: bottomLeftText, left: borderSize + textPadding, top: totalH - Math.round(borderSize * 0.32) })
+  }
+
+  // Bottom right - always show avoidxray.com
+  const bottomRightText = Buffer.from(createTextSvg('avoidxray.com', fontSize, '#F4E5C2', { weight: 700, letterSpacing: 1, fontStyle: 'mono' }))
+  const bottomRightMeta = await sharp(bottomRightText).metadata()
+  const bottomRightWidth = bottomRightMeta.width || 100
+  composites.push({ input: bottomRightText, left: totalW - borderSize - bottomRightWidth - textPadding, top: totalH - Math.round(borderSize * 0.32) })
+
+  return filmBg.composite(composites)
+}
+
+async function createPolaroidWatermark(image: sharp.Sharp, w: number, h: number, camera: string, film: string, username: string, caption: string, date: string, showQR: boolean, photoId: string, baseUrl: string) {
+  // Authentic Polaroid proportions - photo takes up most of the space
+  const sideBorder = Math.max(45, Math.round(w * 0.035))
+  const topBorder = sideBorder
+  const bottomSpace = Math.max(160, Math.round(h * 0.16))
+  const totalW = w + sideBorder * 2
+  const totalH = h + topBorder + bottomSpace
+
+  // Authentic off-white Polaroid color
+  const polaroidBg = sharp({
+    create: { width: totalW, height: totalH, channels: 3, background: { r: 250, g: 248, b: 245 } }
+  })
+
+  // Create subtle paper texture
+  const textureSize = 200
+  const textureData = Buffer.alloc(textureSize * textureSize * 4)
+  for (let i = 0; i < textureData.length; i += 4) {
+    const noise = Math.random() * 8 - 4
+    textureData[i] = 250 + noise
+    textureData[i + 1] = 248 + noise
+    textureData[i + 2] = 245 + noise
+    textureData[i + 3] = 6
+  }
+  const textureBuffer = await sharp(textureData, {
+    raw: { width: textureSize, height: textureSize, channels: 4 }
+  }).png().toBuffer()
+
+  // Create subtle shadow around photo
+  const shadowSize = 3
+  const shadowBuffer = await sharp({
+    create: {
+      width: w + shadowSize * 2,
+      height: h + shadowSize * 2,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0.08 }
+    }
+  }).blur(2).png().toBuffer()
+
+  const composites: sharp.OverlayOptions[] = [
+    { input: textureBuffer, tile: true, blend: 'overlay' },
+    { input: shadowBuffer, left: sideBorder - shadowSize, top: topBorder - shadowSize },
+    { input: await image.toBuffer(), left: sideBorder, top: topBorder }
+  ]
+
+  // Typography - bigger text
+  const baseFontSize = Math.round(bottomSpace * 0.18)
+  const metadataFontSize = Math.round(baseFontSize * 0.85)
+  const usernameFontSize = Math.round(baseFontSize * 0.72)
+  const padding = Math.round(bottomSpace * 0.12)
+  const lineSpacing = Math.round(baseFontSize * 1.35)
+
+  // Bottom elements - Logo + QR side by side
+  if (showQR) {
+    // Calculate total height of text lines
+    let textLineCount = 0
+    if (caption) textLineCount++
+    if (camera || film) textLineCount++
+    if (username || date) textLineCount++
+
+    // Calculate total text height
+    const totalTextHeight = textLineCount > 0
+      ? (baseFontSize + (textLineCount - 1) * lineSpacing)
+      : baseFontSize
+
+    // QR code and logo should match total text height
+    const qrSize = Math.round(totalTextHeight)
+    const photoUrl = `${baseUrl}/photos/${photoId}`
+
+    // Generate QR code
+    const qrDataUrl = await QRCode.toDataURL(photoUrl, {
+      width: qrSize,
+      margin: 0,
+      color: {
+        dark: '#2a2a2a',
+        light: '#FAF8F5'
+      }
+    })
+
+    // Convert data URL to buffer
+    const qrBase64 = qrDataUrl.replace(/^data:image\/png;base64,/, '')
+    const qrBuffer = Buffer.from(qrBase64, 'base64')
+
+    // Square logo - same height as QR code, maintain aspect ratio
+    const logoHeight = qrSize
+    const faviconSvg = Buffer.from(FAVICON_SVG)
+    const logoBuffer = await sharp(faviconSvg).resize({ height: logoHeight, fit: 'contain', background: { r: 250, g: 248, b: 245, alpha: 0 } }).png().toBuffer()
+    const logoMeta = await sharp(logoBuffer).metadata()
+    const logoWidth = logoMeta.width || logoHeight
+
+    // Calculate positions - aligned to RIGHT edge of photo
+    const elementSpacing = Math.round(bottomSpace * 0.08)
+
+    // Align to right edge of photo
+    const qrLeft = sideBorder + w - qrSize
+    const logoLeft = qrLeft - elementSpacing - logoWidth
+
+    // Align text and logo+QR to the same top position
+    const alignedTop = h + topBorder + padding
+
+    // Position logo
+    composites.push({
+      input: logoBuffer,
+      left: logoLeft,
+      top: alignedTop
+    })
+
+    // Position QR code
+    composites.push({
+      input: qrBuffer,
+      left: qrLeft,
+      top: alignedTop
+    })
+
+    // Text aligned to LEFT edge of photo, same top position
+    const textLeft = sideBorder
+    let currentY = alignedTop
+
+    // Caption (if present)
+    if (caption) {
+      const captionSvg = Buffer.from(createTextSvg(caption, baseFontSize, '#2a2a2a', { weight: 600 }))
+      composites.push({
+        input: captionSvg,
+        left: textLeft,
+        top: currentY
+      })
+      currentY += lineSpacing
+    }
+
+    // Camera and Film metadata
+    const metadataItems: string[] = []
+    if (camera) metadataItems.push(camera)
+    if (film) metadataItems.push(film)
+
+    if (metadataItems.length > 0) {
+      const metadataText = metadataItems.join('  •  ')
+      const metadataSvg = Buffer.from(createTextSvg(metadataText, metadataFontSize, '#5a5a5a', { weight: 400 }))
+      composites.push({
+        input: metadataSvg,
+        left: textLeft,
+        top: currentY
+      })
+      currentY += Math.round(metadataFontSize * 1.3)
+    }
+
+    // Username and date on same line
+    if (username || date) {
+      const userDateItems: string[] = []
+      if (username) userDateItems.push(`@${username}`)
+      if (date) userDateItems.push(date)
+
+      const userDateText = userDateItems.join('  •  ')
+      const userDateSvg = Buffer.from(createTextSvg(userDateText, usernameFontSize, '#8a8a8a', { weight: 400 }))
+      composites.push({
+        input: userDateSvg,
+        left: textLeft,
+        top: currentY
+      })
+    }
+  } else {
+    // No QR code - just show logo on the right
+    const logoHeight = Math.round(bottomSpace * 0.24)
+    const logoSvg = Buffer.from(LOGO_SVG_INVERTED)
+    const logoBuffer = await sharp(logoSvg).resize({ height: logoHeight }).png().toBuffer()
+    const logoMeta = await sharp(logoBuffer).metadata()
+    const logoWidth = logoMeta.width || 100
+
+    const logoLeft = sideBorder + w - logoWidth
+    const logoTop = totalH - padding - logoHeight
+
+    composites.push({
+      input: logoBuffer,
+      left: logoLeft,
+      top: logoTop
+    })
+
+    // Text aligned to left edge of photo
+    const textLeft = sideBorder
+    let currentY = h + topBorder + padding
+
+    // Caption (if present)
+    if (caption) {
+      const captionSvg = Buffer.from(createTextSvg(caption, baseFontSize, '#2a2a2a', { weight: 600 }))
+      composites.push({
+        input: captionSvg,
+        left: textLeft,
+        top: currentY
+      })
+      currentY += lineSpacing
+    }
+
+    // Camera and Film metadata
+    const metadataItems: string[] = []
+    if (camera) metadataItems.push(camera)
+    if (film) metadataItems.push(film)
+
+    if (metadataItems.length > 0) {
+      const metadataText = metadataItems.join('  •  ')
+      const metadataSvg = Buffer.from(createTextSvg(metadataText, metadataFontSize, '#5a5a5a', { weight: 400 }))
+      composites.push({
+        input: metadataSvg,
+        left: textLeft,
+        top: currentY
+      })
+      currentY += Math.round(metadataFontSize * 1.3)
+    }
+
+    // Username and date on same line
+    if (username || date) {
+      const userDateItems: string[] = []
+      if (username) userDateItems.push(`@${username}`)
+      if (date) userDateItems.push(date)
+
+      const userDateText = userDateItems.join('  •  ')
+      const userDateSvg = Buffer.from(createTextSvg(userDateText, usernameFontSize, '#8a8a8a', { weight: 400 }))
+      composites.push({
+        input: userDateSvg,
+        left: textLeft,
+        top: currentY
+      })
+    }
+  }
+
+  return polaroidBg.composite(composites)
+}
+
