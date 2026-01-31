@@ -37,7 +37,18 @@ export async function POST(req: NextRequest) {
     data: { email: emailLower, passwordHash, username: usernameLower, name, verificationToken }
   })
 
-  await sendVerificationEmail(emailLower, verificationToken)
+  const emailResult = await sendVerificationEmail(emailLower, verificationToken)
+
+  if (!emailResult.success) {
+    console.error('[Register] Failed to send verification email:', emailResult.error)
+    // User is created but email failed - they can resend later
+    return NextResponse.json({
+      id: user.id,
+      email: user.email,
+      needsVerification: true,
+      emailWarning: 'Account created but verification email failed to send. Please use "Resend verification email".'
+    })
+  }
 
   return NextResponse.json({ id: user.id, email: user.email, needsVerification: true })
 }

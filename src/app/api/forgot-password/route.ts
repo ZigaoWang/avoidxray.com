@@ -24,7 +24,13 @@ export async function POST(req: NextRequest) {
     data: { resetToken, resetTokenExpiry }
   })
 
-  await sendPasswordResetEmail(user.email, resetToken)
+  const emailResult = await sendPasswordResetEmail(user.email, resetToken)
 
+  if (!emailResult.success) {
+    console.error('[Forgot Password] Failed to send reset email:', emailResult.error)
+    // Don't reveal if user exists, but log the error
+  }
+
+  // Always return success message for security (don't reveal if user exists)
   return NextResponse.json({ message: 'If an account exists, a reset link has been sent' })
 }

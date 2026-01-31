@@ -1,18 +1,25 @@
-export async function sendVerificationEmail(email: string, token: string) {
+export async function sendVerificationEmail(email: string, token: string): Promise<{ success: boolean; error?: string }> {
   const baseUrl = process.env.NEXTAUTH_URL || 'https://avoidxray.com'
   const verifyUrl = `${baseUrl}/verify?token=${token}`
 
-  await fetch('https://send.api.mailtrap.io/api/send', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.MAILTRAP_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      from: { email: 'noreply@avoidxray.com', name: 'AVOID X RAY' },
-      to: [{ email }],
-      subject: 'Verify your email - AVOID X RAY',
-      html: `
+  // Check if API key is configured
+  if (!process.env.MAILTRAP_API_KEY) {
+    console.error('[Email] MAILTRAP_API_KEY is not configured')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  try {
+    const response = await fetch('https://send.api.mailtrap.io/api/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.MAILTRAP_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: { email: 'noreply@avoidxray.com', name: 'AVOID X RAY' },
+        to: [{ email }],
+        subject: 'Verify your email - AVOID X RAY',
+        html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -64,23 +71,54 @@ export async function sendVerificationEmail(email: string, token: string) {
       `
     })
   })
+
+    // Check response status
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[Email] Failed to send verification email:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+        recipient: email
+      })
+      return { success: false, error: `Email service error: ${response.status}` }
+    }
+
+    const result = await response.json()
+    console.log('[Email] Verification email sent successfully:', { recipient: email, messageId: result.message_id })
+    return { success: true }
+
+  } catch (error) {
+    console.error('[Email] Exception sending verification email:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      recipient: email
+    })
+    return { success: false, error: 'Failed to send email' }
+  }
 }
 
-export async function sendPasswordResetEmail(email: string, token: string) {
+export async function sendPasswordResetEmail(email: string, token: string): Promise<{ success: boolean; error?: string }> {
   const baseUrl = process.env.NEXTAUTH_URL || 'https://avoidxray.com'
   const resetUrl = `${baseUrl}/reset-password?token=${token}`
 
-  await fetch('https://send.api.mailtrap.io/api/send', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${process.env.MAILTRAP_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      from: { email: 'noreply@avoidxray.com', name: 'AVOID X RAY' },
-      to: [{ email }],
-      subject: 'Reset your password - AVOID X RAY',
-      html: `
+  // Check if API key is configured
+  if (!process.env.MAILTRAP_API_KEY) {
+    console.error('[Email] MAILTRAP_API_KEY is not configured')
+    return { success: false, error: 'Email service not configured' }
+  }
+
+  try {
+    const response = await fetch('https://send.api.mailtrap.io/api/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.MAILTRAP_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: { email: 'noreply@avoidxray.com', name: 'AVOID X RAY' },
+        to: [{ email }],
+        subject: 'Reset your password - AVOID X RAY',
+        html: `
 <!DOCTYPE html>
 <html>
 <head>
@@ -128,4 +166,28 @@ export async function sendPasswordResetEmail(email: string, token: string) {
       `
     })
   })
+
+    // Check response status
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error('[Email] Failed to send password reset email:', {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+        recipient: email
+      })
+      return { success: false, error: `Email service error: ${response.status}` }
+    }
+
+    const result = await response.json()
+    console.log('[Email] Password reset email sent successfully:', { recipient: email, messageId: result.message_id })
+    return { success: true }
+
+  } catch (error) {
+    console.error('[Email] Exception sending password reset email:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      recipient: email
+    })
+    return { success: false, error: 'Failed to send email' }
+  }
 }

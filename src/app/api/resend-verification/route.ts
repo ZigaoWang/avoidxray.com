@@ -16,7 +16,15 @@ export async function POST(req: NextRequest) {
 
   const token = crypto.randomBytes(32).toString('hex')
   await prisma.user.update({ where: { id: user.id }, data: { verificationToken: token } })
-  await sendVerificationEmail(user.email, token)
+
+  const emailResult = await sendVerificationEmail(user.email, token)
+
+  if (!emailResult.success) {
+    console.error('[Resend Verification] Failed to send email:', emailResult.error)
+    return NextResponse.json({
+      error: 'Failed to send verification email. Please try again later.'
+    }, { status: 500 })
+  }
 
   return NextResponse.json({ success: true })
 }
