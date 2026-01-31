@@ -34,12 +34,13 @@ async function fetchImage(url: string): Promise<Buffer> {
   return Buffer.from(await response.arrayBuffer())
 }
 
-// Create text SVG with proper font styling
+// Create text SVG with consistent font styling
+// Uses Arial/Helvetica which are available on all platforms and render consistently
 function createTextSvg(
   text: string,
   fontSize: number,
   color: string,
-  options: { weight?: number; letterSpacing?: number; align?: 'left' | 'center' | 'right'; width?: number; fontStyle?: 'sans' | 'handwritten' | 'mono' } = {}
+  options: { weight?: number; letterSpacing?: number; align?: 'left' | 'center' | 'right'; width?: number; fontStyle?: 'sans' | 'mono' } = {}
 ): string {
   const { weight = 400, letterSpacing = 0, align = 'left', width, fontStyle = 'sans' } = options
   const estimatedWidth = width || Math.ceil(text.length * fontSize * 0.7)
@@ -55,20 +56,13 @@ function createTextSvg(
     anchor = 'end'
   }
 
-  // Font selection
-  let fontFamily = "'Helvetica Neue', 'Arial', sans-serif"
-  let fontImport = ''
-
-  if (fontStyle === 'handwritten') {
-    // Use Kalam for better handwritten look
-    fontImport = `<defs><style>@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&amp;display=swap');</style></defs>`
-    fontFamily = "'Kalam', cursive"
-  } else if (fontStyle === 'mono') {
-    fontFamily = "'Courier New', 'Courier', monospace"
-  }
+  // Use Arial/Helvetica for sans, Courier for mono
+  // These fonts are universally available and render consistently
+  let fontFamily = fontStyle === 'mono'
+    ? 'Courier New, Courier, monospace'
+    : 'Arial, Helvetica, sans-serif'
 
   return `<svg width="${estimatedWidth}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-    ${fontImport}
     <text x="${x}" y="${fontSize * 1.05}" font-size="${fontSize}" font-weight="${weight}" fill="${color}" text-anchor="${anchor}" letter-spacing="${letterSpacing}" font-family="${fontFamily}">${escapeXml(text)}</text>
   </svg>`
 }
@@ -112,21 +106,12 @@ export async function GET(req: NextRequest) {
   try {
     // Fetch the original image
     const imageBuffer = await fetchImage(photo.originalPath)
-    let image = sharp(imageBuffer)
+    const image = sharp(imageBuffer)
     const metadata = await image.metadata()
-    let imgWidth = metadata.width || 1600
-    let imgHeight = metadata.height || 1200
 
-    // For preview, resize to smaller size for faster loading
-    if (isPreview) {
-      const maxPreviewSize = 800
-      if (imgWidth > maxPreviewSize || imgHeight > maxPreviewSize) {
-        const scale = Math.min(maxPreviewSize / imgWidth, maxPreviewSize / imgHeight)
-        imgWidth = Math.round(imgWidth * scale)
-        imgHeight = Math.round(imgHeight * scale)
-        image = sharp(await image.resize(imgWidth, imgHeight, { fit: 'inside' }).toBuffer())
-      }
-    }
+    // Store original dimensions - these will be used for watermark calculations
+    const originalWidth = metadata.width || 1600
+    const originalHeight = metadata.height || 1200
 
     const camera = showCamera ? (photo.camera?.name || '') : ''
     const film = showFilm ? (photo.filmStock?.name || '') : ''
@@ -144,20 +129,37 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Generate watermark based on ORIGINAL dimensions
     let result: sharp.Sharp
 
     switch (style) {
       case 'minimal':
-        result = await createMinimalWatermark(image, imgWidth, imgHeight, camera, film)
+        result = await createMinimalWatermark(image, originalWidth, originalHeight, camera, film)
         break
       case 'film-strip':
-        result = await createFilmStripWatermark(image, imgWidth, imgHeight, camera, film, username)
+        result = await createFilmStripWatermark(image, originalWidth, originalHeight, camera, film, username)
         break
       case 'polaroid':
-        result = await createPolaroidWatermark(image, imgWidth, imgHeight, camera, film, username, showCaption ? customCaption : '', date, showQR, photoId, baseUrl)
+        result = await createPolaroidWatermark(image, originalWidth, originalHeight, camera, film, username, showCaption ? customCaption : '', date, showQR, photoId, baseUrl)
         break
       default:
-        result = await createMinimalWatermark(image, imgWidth, imgHeight, camera, film)
+        result = await createMinimalWatermark(image, originalWidth, originalHeight, camera, film)
+    }
+
+    // If preview mode, resize the FINAL composite to smaller size for faster loading
+    if (isPreview) {
+      const maxPreviewSize = 800
+      // Convert to buffer first to execute all pending operations
+      const resultBuffer = await result.png().toBuffer()
+      const resultMeta = await sharp(resultBuffer).metadata()
+      const resultWidth = resultMeta.width || originalWidth
+      const resultHeight = resultMeta.height || originalHeight
+
+      if (resultWidth > maxPreviewSize || resultHeight > maxPreviewSize) {
+        result = sharp(resultBuffer).resize(maxPreviewSize, maxPreviewSize, { fit: 'inside' })
+      } else {
+        result = sharp(resultBuffer)
+      }
     }
 
     // Use high quality for full download, lower for preview
@@ -223,11 +225,16 @@ async function createMinimalWatermark(image: sharp.Sharp, w: number, h: number, 
     .png()
     .toBuffer()
 
+  // Resize image to exact dimensions using fill
+  const finalImage = await image
+    .resize({ width: w, height: h, fit: 'fill' })
+    .toBuffer()
+
   // Combine image with bar
   return sharp({
     create: { width: w, height: h + barHeight, channels: 3, background: { r: 10, g: 10, b: 10 } }
   }).composite([
-    { input: await image.toBuffer(), top: 0, left: 0 },
+    { input: finalImage, top: 0, left: 0 },
     { input: bar, top: h, left: 0 }
   ])
 }
@@ -271,8 +278,13 @@ async function createFilmStripWatermark(image: sharp.Sharp, w: number, h: number
   const filmText = film?.toUpperCase() || ''
   const textPadding = Math.round(borderSize * 0.3)
 
+  // Resize image to exact dimensions using fill
+  const finalImage = await image
+    .resize({ width: w, height: h, fit: 'fill' })
+    .toBuffer()
+
   const composites: sharp.OverlayOptions[] = [...holes]
-  composites.push({ input: await image.toBuffer(), left: borderSize, top: Math.round(borderSize * 0.4) })
+  composites.push({ input: finalImage, left: borderSize, top: Math.round(borderSize * 0.4) })
 
   // Only add text if there's content
   if (filmText) {
@@ -339,10 +351,15 @@ async function createPolaroidWatermark(image: sharp.Sharp, w: number, h: number,
     }
   }).blur(2).png().toBuffer()
 
+  // Resize image to exact dimensions using fill
+  const finalImage = await image
+    .resize({ width: w, height: h, fit: 'fill' })
+    .toBuffer()
+
   const composites: sharp.OverlayOptions[] = [
     { input: textureBuffer, tile: true, blend: 'overlay' },
     { input: shadowBuffer, left: sideBorder - shadowSize, top: topBorder - shadowSize },
-    { input: await image.toBuffer(), left: sideBorder, top: topBorder }
+    { input: finalImage, left: sideBorder, top: topBorder }
   ]
 
   // Typography - bigger text
