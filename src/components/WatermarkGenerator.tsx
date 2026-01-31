@@ -6,6 +6,7 @@ interface WatermarkProps {
   photoId: string
   camera?: string | null
   filmStock?: string | null
+  takenDate?: string | null
   onClose: () => void
 }
 
@@ -17,7 +18,7 @@ const STYLES: { id: WatermarkStyle; name: string; description: string }[] = [
   { id: 'polaroid', name: 'Polaroid', description: 'Classic instant photo style' },
 ]
 
-export default function WatermarkGenerator({ photoId, camera, filmStock, onClose }: WatermarkProps) {
+export default function WatermarkGenerator({ photoId, camera, filmStock, takenDate, onClose }: WatermarkProps) {
   const [style, setStyle] = useState<WatermarkStyle>('polaroid')
   const [downloading, setDownloading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -27,10 +28,16 @@ export default function WatermarkGenerator({ photoId, camera, filmStock, onClose
   const [showCamera, setShowCamera] = useState(true)
   const [showFilm, setShowFilm] = useState(true)
   const [showUsername, setShowUsername] = useState(true)
-  const [showDate, setShowDate] = useState(false)
+  const [showDate, setShowDate] = useState(!!takenDate)
   const [showQR, setShowQR] = useState(true)
   const [showCaption, setShowCaption] = useState(true)
-  const [customDate, setCustomDate] = useState('')
+  const [customDate, setCustomDate] = useState(() => {
+    if (takenDate) {
+      const date = new Date(takenDate)
+      return date.toISOString().split('T')[0]
+    }
+    return ''
+  })
   const [customCaption, setCustomCaption] = useState('Shot on film')
 
   // Load preview when style or options change
@@ -246,7 +253,9 @@ export default function WatermarkGenerator({ photoId, camera, filmStock, onClose
 
               {showDate && (
                 <div>
-                  <label className="text-neutral-400 text-xs mb-1 block">Date</label>
+                  <label className="text-neutral-400 text-xs mb-1 block">
+                    {takenDate ? 'Date (from photo taken date)' : 'Date'}
+                  </label>
                   <input
                     type="date"
                     value={customDate}

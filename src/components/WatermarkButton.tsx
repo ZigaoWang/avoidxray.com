@@ -6,9 +6,10 @@ interface WatermarkButtonProps {
   photoId: string
   camera?: string | null
   filmStock?: string | null
+  takenDate?: string | null
 }
 
-export default function WatermarkButton({ photoId, camera, filmStock }: WatermarkButtonProps) {
+export default function WatermarkButton({ photoId, camera, filmStock, takenDate }: WatermarkButtonProps) {
   const [showGenerator, setShowGenerator] = useState(false)
 
   return (
@@ -25,6 +26,7 @@ export default function WatermarkButton({ photoId, camera, filmStock }: Watermar
           photoId={photoId}
           camera={camera}
           filmStock={filmStock}
+          takenDate={takenDate}
           onClose={() => setShowGenerator(false)}
         />
       )}

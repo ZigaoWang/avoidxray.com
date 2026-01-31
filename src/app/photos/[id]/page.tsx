@@ -191,6 +191,15 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
                   </div>
                 )}
 
+                {photo.takenDate && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-500 text-sm">Taken Date</span>
+                    <span className="text-white text-sm">
+                      {new Date(photo.takenDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center">
                   <span className="text-neutral-500 text-sm">Upload Date</span>
                   <span className="text-white text-sm">
@@ -222,6 +231,7 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
                   photoId={photo.id}
                   camera={photo.camera?.name}
                   filmStock={photo.filmStock?.name}
+                  takenDate={photo.takenDate ? photo.takenDate.toISOString() : null}
                 />
               </div>
 
