@@ -10,7 +10,7 @@ import TagInput from '@/components/TagInput'
 type Camera = { id: string; name: string; brand: string | null }
 type FilmStock = { id: string; name: string; brand: string | null }
 type UploadStatus = 'uploading' | 'done' | 'error'
-type PhotoMeta = { caption: string; cameraId: string; filmStockId: string; tags: string[] }
+type PhotoMeta = { caption: string; cameraId: string; filmStockId: string; tags: string[]; takenDate: string }
 
 export default function UploadPage() {
   const { data: session, status } = useSession()
@@ -24,7 +24,7 @@ export default function UploadPage() {
   const [publishing, setPublishing] = useState(false)
   const publishedRef = useRef(false)
 
-  const [bulkMeta, setBulkMeta] = useState<PhotoMeta>({ caption: '', cameraId: '', filmStockId: '', tags: [] })
+  const [bulkMeta, setBulkMeta] = useState<PhotoMeta>({ caption: '', cameraId: '', filmStockId: '', tags: [], takenDate: '' })
   const [individualMeta, setIndividualMeta] = useState<PhotoMeta[]>([])
   const [cameras, setCameras] = useState<Camera[]>([])
   const [filmStocks, setFilmStocks] = useState<FilmStock[]>([])
@@ -64,7 +64,7 @@ export default function UploadPage() {
     setPreviews(prev => [...prev, ...files.map(f => URL.createObjectURL(f))])
     setUploadStatus(prev => [...prev, ...files.map(() => 'uploading' as UploadStatus)])
     setPhotoIds(prev => [...prev, ...newNulls])
-    setIndividualMeta(prev => [...prev, ...files.map(() => ({ caption: '', cameraId: '', filmStockId: '', tags: [] }))])
+    setIndividualMeta(prev => [...prev, ...files.map(() => ({ caption: '', cameraId: '', filmStockId: '', tags: [], takenDate: '' }))])
 
     // Upload sequentially to avoid SQLite write lock issues
     for (let i = 0; i < files.length; i++) {
@@ -122,7 +122,8 @@ export default function UploadPage() {
         caption: ind.caption || bulkMeta.caption,
         cameraId: ind.cameraId || resolvedCameraId,
         filmStockId: ind.filmStockId || resolvedFilmStockId,
-        tags: ind.tags.length > 0 ? ind.tags : bulkMeta.tags
+        tags: ind.tags.length > 0 ? ind.tags : bulkMeta.tags,
+        takenDate: ind.takenDate || bulkMeta.takenDate
       }
 
       await fetch(`/api/photos/${id}`, {
@@ -132,7 +133,8 @@ export default function UploadPage() {
           caption: meta.caption || null,
           cameraId: meta.cameraId?.startsWith('new-') ? null : (meta.cameraId || null),
           filmStockId: meta.filmStockId?.startsWith('new-') ? null : (meta.filmStockId || null),
-          tags: meta.tags
+          tags: meta.tags,
+          takenDate: meta.takenDate || null
         })
       })
     }))
@@ -232,7 +234,7 @@ export default function UploadPage() {
                         </div>
                       )}
                       {/* Individual meta indicator */}
-                      {(individualMeta[i]?.caption || individualMeta[i]?.cameraId || individualMeta[i]?.filmStockId || individualMeta[i]?.tags.length > 0) && (
+                      {(individualMeta[i]?.caption || individualMeta[i]?.cameraId || individualMeta[i]?.filmStockId || individualMeta[i]?.tags.length > 0 || individualMeta[i]?.takenDate) && (
                         <div className="absolute bottom-1 left-1 w-2 h-2 bg-blue-500 rounded-full" title="Has custom metadata" />
                       )}
                     </div>
@@ -263,6 +265,17 @@ export default function UploadPage() {
                   value={currentMeta.caption}
                   onChange={e => setCurrentMeta({ ...currentMeta, caption: e.target.value })}
                   placeholder={isIndividual ? bulkMeta.caption || 'No default caption' : 'Enter caption...'}
+                  className="w-full p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none placeholder:text-neutral-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-neutral-400 text-xs uppercase tracking-wider mb-2">Taken Date</label>
+                <input
+                  type="date"
+                  value={currentMeta.takenDate}
+                  onChange={e => setCurrentMeta({ ...currentMeta, takenDate: e.target.value })}
+                  placeholder={isIndividual ? bulkMeta.takenDate || 'No default date' : 'Select date...'}
                   className="w-full p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none placeholder:text-neutral-600"
                 />
               </div>

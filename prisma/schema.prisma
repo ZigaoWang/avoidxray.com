@@ -52,6 +52,7 @@ model Photo {
   filmStock     FilmStock? @relation(fields: [filmStockId], references: [id])
   published     Boolean    @default(false)
   createdAt     DateTime   @default(now())
+  takenDate     DateTime?
   likes         Like[]
   comments      Comment[]
   tags          PhotoTag[]

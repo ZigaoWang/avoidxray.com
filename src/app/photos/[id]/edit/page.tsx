@@ -9,7 +9,7 @@ import TagInput from '@/components/TagInput'
 
 type Camera = { id: string; name: string; brand: string | null }
 type FilmStock = { id: string; name: string; brand: string | null }
-type Photo = { id: string; caption: string | null; cameraId: string | null; filmStockId: string | null; tags?: { tag: { name: string } }[] }
+type Photo = { id: string; caption: string | null; cameraId: string | null; filmStockId: string | null; takenDate: string | null; tags?: { tag: { name: string } }[] }
 
 export default function EditPhotoPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session, status } = useSession()
@@ -19,6 +19,7 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
   const [tags, setTags] = useState<string[]>([])
   const [cameraId, setCameraId] = useState('')
   const [filmStockId, setFilmStockId] = useState('')
+  const [takenDate, setTakenDate] = useState('')
   const [newCameraName, setNewCameraName] = useState('')
   const [newFilmName, setNewFilmName] = useState('')
   const [cameras, setCameras] = useState<Camera[]>([])
@@ -38,6 +39,11 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
       setCameraId(data.cameraId || '')
       setFilmStockId(data.filmStockId || '')
       setTags(data.tags?.map((t: { tag: { name: string } }) => t.tag.name) || [])
+      // Format date for input (YYYY-MM-DD)
+      if (data.takenDate) {
+        const date = new Date(data.takenDate)
+        setTakenDate(date.toISOString().split('T')[0])
+      }
     })
     fetch('/api/cameras').then(r => r.json()).then(setCameras)
     fetch('/api/filmstocks').then(r => r.json()).then(setFilmStocks)
@@ -87,7 +93,8 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
         caption,
         cameraId: finalCameraId.startsWith('new-') ? null : finalCameraId,
         filmStockId: finalFilmStockId.startsWith('new-') ? null : finalFilmStockId,
-        tags
+        tags,
+        takenDate: takenDate || null
       })
     })
     router.push(`/photos/${photoId}`)
@@ -140,6 +147,16 @@ export default function EditPhotoPage({ params }: { params: Promise<{ id: string
               type="text"
               value={caption}
               onChange={e => setCaption(e.target.value)}
+              className="w-full p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2 font-medium">Taken Date</label>
+            <input
+              type="date"
+              value={takenDate}
+              onChange={e => setTakenDate(e.target.value)}
               className="w-full p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none"
             />
           </div>

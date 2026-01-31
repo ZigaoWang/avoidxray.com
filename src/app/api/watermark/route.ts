@@ -256,7 +256,11 @@ export async function GET(req: NextRequest) {
         // Parse the date from YYYY-MM-DD format
         const dateObj = new Date(customDate + 'T00:00:00')
         date = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+      } else if (photo.takenDate) {
+        // Use taken date if available
+        date = new Date(photo.takenDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
       } else {
+        // Fall back to upload date
         date = new Date(photo.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
       }
     }

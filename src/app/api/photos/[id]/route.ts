@@ -61,7 +61,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { id } = await params
   const userId = (session.user as { id: string }).id
-  const { caption, cameraId, filmStockId, tags } = await req.json()
+  const { caption, cameraId, filmStockId, tags, takenDate } = await req.json()
 
   const photo = await prisma.photo.findUnique({ where: { id } })
   if (!photo || photo.userId !== userId) {
@@ -92,7 +92,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const updated = await prisma.photo.update({
     where: { id },
-    data: { caption, cameraId: cameraId || null, filmStockId: filmStockId || null, published: true }
+    data: {
+      caption,
+      cameraId: cameraId || null,
+      filmStockId: filmStockId || null,
+      published: true,
+      takenDate: takenDate ? new Date(takenDate + 'T00:00:00') : null
+    }
   })
 
   return NextResponse.json(updated)
