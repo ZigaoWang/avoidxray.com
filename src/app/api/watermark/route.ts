@@ -253,15 +253,15 @@ export async function GET(req: NextRequest) {
     let date = ''
     if (showDate) {
       if (customDate) {
-        // Parse the date from YYYY-MM-DD format
-        const dateObj = new Date(customDate + 'T00:00:00')
-        date = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        // Parse the date from YYYY-MM-DD format in UTC
+        const dateObj = new Date(customDate + 'T00:00:00Z')
+        date = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
       } else if (photo.takenDate) {
-        // Use taken date if available
-        date = new Date(photo.takenDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        // Use taken date if available (stored in UTC)
+        date = new Date(photo.takenDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
       } else {
         // Fall back to upload date
-        date = new Date(photo.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+        date = new Date(photo.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })
       }
     }
 

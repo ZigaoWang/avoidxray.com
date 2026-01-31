@@ -195,7 +195,7 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
                   <div className="flex justify-between items-center">
                     <span className="text-neutral-500 text-sm">Taken Date</span>
                     <span className="text-white text-sm">
-                      {new Date(photo.takenDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      {new Date(photo.takenDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' })}
                     </span>
                   </div>
                 )}

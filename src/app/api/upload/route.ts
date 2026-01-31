@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   const tagsJson = formData.get('tags') as string | null
   const tags: string[] = tagsJson ? JSON.parse(tagsJson) : []
   const takenDateStr = formData.get('takenDate') as string | null
-  const takenDate = takenDateStr ? new Date(takenDateStr + 'T00:00:00') : null
+  const takenDate = takenDateStr ? new Date(takenDateStr + 'T00:00:00Z') : null
 
   if (!files.length) {
     return NextResponse.json({ error: 'No files' }, { status: 400 })

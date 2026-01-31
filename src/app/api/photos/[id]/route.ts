@@ -97,7 +97,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       cameraId: cameraId || null,
       filmStockId: filmStockId || null,
       published: true,
-      takenDate: takenDate ? new Date(takenDate + 'T00:00:00') : null
+      takenDate: takenDate ? new Date(takenDate + 'T00:00:00Z') : null
     }
   })
 
