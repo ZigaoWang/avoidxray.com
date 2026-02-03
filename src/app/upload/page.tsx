@@ -53,6 +53,33 @@ export default function UploadPage() {
     }
   }, [])
 
+  const removeImage = useCallback(async (idx: number) => {
+    const photoId = photoIdsRef.current[idx]
+
+    // Clean up OSS image if it was uploaded
+    if (photoId) {
+      fetch('/api/upload/cleanup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [photoId] }),
+      }).catch(() => {})
+    }
+
+    // Remove from all state arrays
+    setPreviews(prev => prev.filter((_, i) => i !== idx))
+    setUploadStatus(prev => prev.filter((_, i) => i !== idx))
+    setPhotoIds(prev => prev.filter((_, i) => i !== idx))
+    setIndividualMeta(prev => prev.filter((_, i) => i !== idx))
+    photoIdsRef.current = photoIdsRef.current.filter((_, i) => i !== idx)
+
+    // Reset selection if the removed image was selected
+    if (selectedIdx === idx) {
+      setSelectedIdx(null)
+    } else if (selectedIdx !== null && selectedIdx > idx) {
+      setSelectedIdx(selectedIdx - 1)
+    }
+  }, [selectedIdx])
+
   const uploadFiles = useCallback(async (files: File[]) => {
     if (!files.length) return
     const startIdx = previews.length
@@ -214,6 +241,16 @@ export default function UploadPage() {
                       }`}
                     >
                       <img src={url} alt="" className="w-full h-full object-cover" />
+                      {/* Delete button */}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeImage(i) }}
+                        className="absolute top-1.5 left-1.5 text-white hover:text-red-500 z-10 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+                        title="Remove"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
                       {uploadStatus[i] === 'uploading' && (
                         <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
                           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
