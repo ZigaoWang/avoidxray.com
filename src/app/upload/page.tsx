@@ -37,9 +37,13 @@ export default function UploadPage() {
   const [selectedAlbumId, setSelectedAlbumId] = useState('')
 
   useEffect(() => {
-    fetch('/api/cameras').then(r => r.json()).then(setCameras)
-    fetch('/api/filmstocks').then(r => r.json()).then(setFilmStocks)
-    fetch('/api/albums').then(r => r.json()).then(setAlbums)
+    fetch('/api/cameras').then(r => r.json()).then(setCameras).catch(() => setCameras([]))
+    fetch('/api/filmstocks').then(r => r.json()).then(setFilmStocks).catch(() => setFilmStocks([]))
+    fetch('/api/albums').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) {
+        setAlbums(data)
+      }
+    }).catch(() => setAlbums([]))
   }, [])
 
   // Cleanup unpublished photos on unmount (client-side navigation)

@@ -185,7 +185,7 @@ export default async function PhotoPage({ params }: { params: Promise<{ id: stri
               )}
 
               {/* Albums */}
-              {photo.collections.length > 0 && (
+              {photo.collections && photo.collections.length > 0 && (
                 <div className="pt-2">
                   <p className="text-neutral-500 text-sm mb-2">Included in:</p>
                   <div className="flex flex-wrap gap-2">

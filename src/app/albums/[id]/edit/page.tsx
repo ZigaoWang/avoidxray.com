@@ -50,13 +50,16 @@ export default function EditAlbumPage() {
         fetch('/api/photos/mine').then(r => r.json())
       ]).then(([albumData, photosData]) => {
         setAlbum(albumData)
-        setAlbumName(albumData.name)
+        setAlbumName(albumData.name || '')
         setDescription(albumData.description || '')
-        const photoIds = albumData.photos.map((p: AlbumPhoto) => p.photo.id)
+        const photoIds = Array.isArray(albumData.photos) ? albumData.photos.map((p: AlbumPhoto) => p.photo.id) : []
         setCurrentPhotoIds(photoIds)
         setSelectedPhotoIds(photoIds)
-        setAllPhotos(photosData)
+        setAllPhotos(Array.isArray(photosData) ? photosData : [])
         setLoading(false)
+      }).catch(() => {
+        setLoading(false)
+        router.push('/albums')
       })
     }
   }, [status, albumId, router])

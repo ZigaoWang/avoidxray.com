@@ -13,7 +13,7 @@ type Album = {
 }
 
 export default function AlbumGrid({ albums: initialAlbums, showEdit = false }: { albums: Album[], showEdit?: boolean }) {
-  const [albums, setAlbums] = useState(initialAlbums)
+  const [albums, setAlbums] = useState(Array.isArray(initialAlbums) ? initialAlbums : [])
   const router = useRouter()
 
   const handleDelete = async (albumId: string, albumName: string) => {

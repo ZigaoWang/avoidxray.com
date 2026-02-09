@@ -33,7 +33,11 @@ export default function CreateAlbumPage() {
       fetch('/api/photos/mine')
         .then(r => r.json())
         .then(data => {
-          setPhotos(data)
+          setPhotos(Array.isArray(data) ? data : [])
+          setLoading(false)
+        })
+        .catch(() => {
+          setPhotos([])
           setLoading(false)
         })
     }
