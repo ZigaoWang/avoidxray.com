@@ -35,15 +35,45 @@ export default function UploadPage() {
   const [albumName, setAlbumName] = useState('')
   const [albums, setAlbums] = useState<Album[]>([])
   const [selectedAlbumId, setSelectedAlbumId] = useState('')
+  const [albumsLoaded, setAlbumsLoaded] = useState(false)
 
   useEffect(() => {
-    fetch('/api/cameras').then(r => r.json()).then(setCameras).catch(() => setCameras([]))
-    fetch('/api/filmstocks').then(r => r.json()).then(setFilmStocks).catch(() => setFilmStocks([]))
-    fetch('/api/albums').then(r => r.json()).then(data => {
-      if (Array.isArray(data)) {
-        setAlbums(data)
-      }
-    }).catch(() => setAlbums([]))
+    fetch('/api/cameras')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setCameras(data)
+        } else {
+          setCameras([])
+        }
+      })
+      .catch(() => setCameras([]))
+
+    fetch('/api/filmstocks')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setFilmStocks(data)
+        } else {
+          setFilmStocks([])
+        }
+      })
+      .catch(() => setFilmStocks([]))
+
+    fetch('/api/albums')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setAlbums(data)
+        } else {
+          setAlbums([])
+        }
+        setAlbumsLoaded(true)
+      })
+      .catch(() => {
+        setAlbums([])
+        setAlbumsLoaded(true)
+      })
   }, [])
 
   // Cleanup unpublished photos on unmount (client-side navigation)
@@ -379,49 +409,73 @@ export default function UploadPage() {
               </div>
 
               <div className="border-t border-neutral-800 pt-5">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={addToAlbum}
-                    onChange={e => setAddToAlbum(e.target.checked)}
-                    className="w-4 h-4 bg-neutral-900 border border-neutral-700 checked:bg-[#D32F2F] checked:border-[#D32F2F] focus:outline-none focus:ring-1 focus:ring-[#D32F2F]"
-                  />
-                  <span className="text-white text-sm font-medium group-hover:text-[#D32F2F] transition-colors">
-                    Add to album
-                  </span>
-                </label>
-
-                {addToAlbum && (
-                  <div className="mt-3 space-y-3">
-                    <div>
-                      <select
-                        value={selectedAlbumId}
-                        onChange={e => {
-                          setSelectedAlbumId(e.target.value)
-                          if (e.target.value) setAlbumName('')
-                        }}
-                        className="w-full p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none text-sm"
-                      >
-                        <option value="">Create new album...</option>
-                        {albums.map(album => (
-                          <option key={album.id} value={album.id}>{album.name}</option>
-                        ))}
-                      </select>
+                <div className="bg-neutral-900 border border-neutral-800 p-4 space-y-3">
+                  <label className="flex items-center gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={addToAlbum}
+                      onChange={e => setAddToAlbum(e.target.checked)}
+                      className="w-5 h-5 bg-neutral-800 border-2 border-neutral-700 checked:bg-[#D32F2F] checked:border-[#D32F2F] focus:outline-none focus:ring-2 focus:ring-[#D32F2F] focus:ring-offset-2 focus:ring-offset-neutral-900 cursor-pointer"
+                    />
+                    <div className="flex-1">
+                      <span className="text-white font-semibold text-sm block group-hover:text-[#D32F2F] transition-colors">
+                        Add to Album
+                      </span>
+                      <span className="text-neutral-500 text-xs">
+                        Organize these photos into an album
+                      </span>
                     </div>
+                  </label>
 
-                    {!selectedAlbumId && (
+                  {addToAlbum && (
+                    <div className="pt-2 space-y-3 border-t border-neutral-800">
                       <div>
-                        <input
-                          type="text"
-                          value={albumName}
-                          onChange={e => setAlbumName(e.target.value)}
-                          placeholder="Enter album name..."
-                          className="w-full p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none placeholder:text-neutral-600 text-sm"
-                        />
+                        <label className="block text-neutral-400 text-xs uppercase tracking-wider mb-2">
+                          {selectedAlbumId ? 'Add to Existing Album' : 'Create New Album'}
+                        </label>
+                        <select
+                          value={selectedAlbumId}
+                          onChange={e => {
+                            setSelectedAlbumId(e.target.value)
+                            if (e.target.value) setAlbumName('')
+                          }}
+                          className="w-full p-3 bg-neutral-800 text-white border border-neutral-700 focus:border-[#D32F2F] focus:outline-none text-sm"
+                        >
+                          <option value="">+ Create new album</option>
+                          {albumsLoaded && Array.isArray(albums) && albums.length > 0 && (
+                            <optgroup label="Your Albums">
+                              {albums.map(album => (
+                                <option key={album.id} value={album.id}>{album.name}</option>
+                              ))}
+                            </optgroup>
+                          )}
+                        </select>
                       </div>
-                    )}
-                  </div>
-                )}
+
+                      {!selectedAlbumId && (
+                        <div>
+                          <label className="block text-neutral-400 text-xs uppercase tracking-wider mb-2">Album Name</label>
+                          <input
+                            type="text"
+                            value={albumName}
+                            onChange={e => setAlbumName(e.target.value)}
+                            placeholder="e.g., Summer 2024, Street Photography..."
+                            className="w-full p-3 bg-neutral-800 text-white border border-neutral-700 focus:border-[#D32F2F] focus:outline-none placeholder:text-neutral-600 text-sm"
+                          />
+                        </div>
+                      )}
+
+                      {selectedAlbumId && Array.isArray(albums) && albums.length > 0 && (
+                        <div className="flex items-center gap-2 text-neutral-500 text-xs">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span>Photos will be added to "{albums.find(a => a.id === selectedAlbumId)?.name}"</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <button

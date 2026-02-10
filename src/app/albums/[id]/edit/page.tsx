@@ -189,13 +189,17 @@ export default function EditAlbumPage() {
 
             <div className="lg:col-span-2">
               <div className="mb-4">
-                <h2 className="text-white font-semibold text-lg">Select Photos</h2>
-                <p className="text-neutral-500 text-sm">Click on photos to add or remove them from the album</p>
+                <h2 className="text-white font-semibold text-lg">Manage Album Photos</h2>
+                <p className="text-neutral-500 text-sm">Click photos to add or remove them from this album</p>
               </div>
 
               {allPhotos.length === 0 ? (
                 <div className="text-center py-20 border border-dashed border-neutral-800">
-                  <p className="text-neutral-500 mb-4">No photos yet</p>
+                  <svg className="w-16 h-16 mx-auto mb-4 text-neutral-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <p className="text-neutral-500 mb-2">No photos in your account yet</p>
+                  <p className="text-neutral-600 text-sm mb-4">Upload some photos to add to this album</p>
                   <a
                     href="/upload"
                     className="inline-block px-5 py-2.5 bg-[#D32F2F] text-white text-sm font-bold uppercase tracking-wider hover:bg-[#B71C1C] transition-colors"
@@ -205,7 +209,7 @@ export default function EditAlbumPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-                  {allPhotos.map(photo => (
+                  {Array.isArray(allPhotos) && allPhotos.map(photo => (
                     <button
                       key={photo.id}
                       onClick={() => togglePhoto(photo.id)}
