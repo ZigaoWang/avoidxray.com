@@ -65,20 +65,20 @@ export default async function Home() {
           </p>
 
           <div className="flex items-center justify-center gap-8 md:gap-12 mb-10">
-            <div>
-              <div className="text-3xl md:text-4xl font-black text-white">{totalPhotos}</div>
-              <div className="text-xs text-neutral-500 uppercase tracking-wider">Photos</div>
-            </div>
+            <Link href="/explore" className="group">
+              <div className="text-3xl md:text-4xl font-black text-white group-hover:text-[#D32F2F] transition-colors">{totalPhotos}</div>
+              <div className="text-xs text-neutral-500 uppercase tracking-wider group-hover:text-neutral-400 transition-colors">Photos</div>
+            </Link>
             <div className="w-px h-10 bg-neutral-800" />
-            <div>
-              <div className="text-3xl md:text-4xl font-black text-white">{filmStockCount}</div>
-              <div className="text-xs text-neutral-500 uppercase tracking-wider">Films</div>
-            </div>
+            <Link href="/films" className="group">
+              <div className="text-3xl md:text-4xl font-black text-white group-hover:text-[#D32F2F] transition-colors">{filmStockCount}</div>
+              <div className="text-xs text-neutral-500 uppercase tracking-wider group-hover:text-neutral-400 transition-colors">Films</div>
+            </Link>
             <div className="w-px h-10 bg-neutral-800" />
-            <div>
-              <div className="text-3xl md:text-4xl font-black text-white">{cameraCount}</div>
-              <div className="text-xs text-neutral-500 uppercase tracking-wider">Cameras</div>
-            </div>
+            <Link href="/cameras" className="group">
+              <div className="text-3xl md:text-4xl font-black text-white group-hover:text-[#D32F2F] transition-colors">{cameraCount}</div>
+              <div className="text-xs text-neutral-500 uppercase tracking-wider group-hover:text-neutral-400 transition-colors">Cameras</div>
+            </Link>
           </div>
 
           <Link href={session ? "/upload" : "/register"} className="bg-[#D32F2F] text-white px-8 py-4 text-sm font-bold uppercase tracking-wider hover:bg-[#B71C1C] transition-colors">
