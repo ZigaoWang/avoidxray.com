@@ -91,38 +91,47 @@ export async function POST(
     const key = `filmstocks/${filmStockId}-${timestamp}.webp`
     const imageUrl = await uploadToOSS(processedBuffer, key)
 
-    // Update film stock with pending status
+    // If admin, auto-approve; otherwise set to pending
+    const imageStatus = user?.isAdmin ? 'approved' : 'pending'
+
+    // Update film stock
     const updatedFilmStock = await prisma.filmStock.update({
       where: { id: filmStockId },
       data: {
         imageUrl,
         description: description || filmStock.description,
-        imageStatus: 'pending',
+        imageStatus,
         imageUploadedBy: userId,
         imageUploadedAt: new Date()
       }
     })
 
-    // Send email notification to admin (don't block on email failure)
-    const uploaderUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { username: true }
-    })
-
-    if (uploaderUser) {
-      sendAdminModerationNotification(
-        'filmstock',
-        filmStock.name,
-        filmStock.brand,
-        uploaderUser.username,
-        filmStockId
-      ).catch(err => {
-        console.error('Failed to send admin notification email:', err)
+    // Send email notification to admin only if not admin (don't block on email failure)
+    if (!user?.isAdmin) {
+      const uploaderUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { username: true }
       })
+
+      if (uploaderUser) {
+        sendAdminModerationNotification(
+          'filmstock',
+          filmStock.name,
+          filmStock.brand,
+          uploaderUser.username,
+          filmStockId
+        ).catch(err => {
+          console.error('Failed to send admin notification email:', err)
+        })
+      }
     }
 
+    const message = user?.isAdmin
+      ? 'Image uploaded and approved successfully.'
+      : 'Image uploaded successfully. Waiting for admin approval.'
+
     return NextResponse.json({
-      message: 'Image uploaded successfully. Waiting for admin approval.',
+      message,
       filmStock: updatedFilmStock
     })
   } catch (error) {

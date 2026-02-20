@@ -86,38 +86,47 @@ export async function POST(
     const key = `cameras/${cameraId}-${timestamp}.webp`
     const imageUrl = await uploadToOSS(processedBuffer, key)
 
-    // Update camera with pending status
+    // If admin, auto-approve; otherwise set to pending
+    const imageStatus = user?.isAdmin ? 'approved' : 'pending'
+
+    // Update camera
     const updatedCamera = await prisma.camera.update({
       where: { id: cameraId },
       data: {
         imageUrl,
         description: description || camera.description,
-        imageStatus: 'pending',
+        imageStatus,
         imageUploadedBy: userId,
         imageUploadedAt: new Date()
       }
     })
 
-    // Send email notification to admin (don't block on email failure)
-    const uploaderUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { username: true }
-    })
-
-    if (uploaderUser) {
-      sendAdminModerationNotification(
-        'camera',
-        camera.name,
-        camera.brand,
-        uploaderUser.username,
-        cameraId
-      ).catch(err => {
-        console.error('Failed to send admin notification email:', err)
+    // Send email notification to admin only if not admin (don't block on email failure)
+    if (!user?.isAdmin) {
+      const uploaderUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { username: true }
       })
+
+      if (uploaderUser) {
+        sendAdminModerationNotification(
+          'camera',
+          camera.name,
+          camera.brand,
+          uploaderUser.username,
+          cameraId
+        ).catch(err => {
+          console.error('Failed to send admin notification email:', err)
+        })
+      }
     }
 
+    const message = user?.isAdmin
+      ? 'Image uploaded and approved successfully.'
+      : 'Image uploaded successfully. Waiting for admin approval.'
+
     return NextResponse.json({
-      message: 'Image uploaded successfully. Waiting for admin approval.',
+      message,
       camera: updatedCamera
     })
   } catch (error) {
