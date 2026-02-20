@@ -77,10 +77,10 @@ export default async function FilmsPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-bold group-hover:text-[#D32F2F] transition-colors truncate">
+                      <h3 className="text-lg font-bold group-hover:text-[#D32F2F] transition-colors truncate">
                         {film.brand ? `${film.brand} ${film.name}` : film.name}
                       </h3>
-                      <div className="flex items-center gap-2 text-neutral-500 text-sm">
+                      <div className="flex items-center gap-2 text-neutral-500">
                         {film.iso && <span>ISO {film.iso}</span>}
                         {film.iso && <span>•</span>}
                         <span>{film._count.photos} photos</span>

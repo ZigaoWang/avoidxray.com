@@ -26,57 +26,90 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
       <Header />
 
-      <main className="flex-1 max-w-7xl mx-auto w-full py-16 px-6">
+      <main className="flex-1 max-w-7xl mx-auto w-full py-8 md:py-16 px-4 md:px-6">
         <Link href="/films" className="text-neutral-500 hover:text-white text-sm mb-6 inline-block">
           &larr; All Films
         </Link>
 
-        <div className="flex gap-8 mb-12">
-          {/* Left: Image */}
-          {displayImage && (
-            <div className="w-48 flex-shrink-0">
-              <div className="relative aspect-square bg-neutral-900 mb-3">
-                <Image
-                  src={displayImage}
-                  alt={filmStock.name}
-                  fill
-                  className="object-contain"
-                />
-              </div>
-              <SuggestEditButton
-                type="filmstock"
-                id={filmStock.id}
-                name={filmStock.name}
-                brand={filmStock.brand}
-                currentImage={displayImage}
-                currentDescription={displayDescription}
-              />
-            </div>
-          )}
-
-          {/* Right: Info */}
-          <div className="flex-1">
-            <h1 className="text-4xl font-black text-white mb-2 tracking-tight">
-              {filmStock.brand ? `${filmStock.brand} ${filmStock.name}` : filmStock.name}
-            </h1>
-            <div className="flex items-center gap-3 text-neutral-500 mb-6">
-              {filmStock.iso && (
-                <span className="text-sm">ISO {filmStock.iso}</span>
+        {/* Hero Section */}
+        <div className="bg-gradient-to-br from-neutral-900 to-neutral-950 border border-neutral-800 overflow-hidden mb-8">
+          <div className="flex flex-col md:flex-row">
+            {/* Image */}
+            <div className="w-full md:w-2/5 lg:w-1/3 bg-neutral-900/50 flex items-center justify-center p-8 md:p-12">
+              {displayImage ? (
+                <div className="relative w-full aspect-[4/3]">
+                  <Image
+                    src={displayImage}
+                    alt={filmStock.name}
+                    fill
+                    className="object-contain"
+                    priority
+                  />
+                </div>
+              ) : (
+                <div className="w-full aspect-[4/3] flex items-center justify-center">
+                  <svg
+                    className="w-24 h-24 text-neutral-700"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                    />
+                  </svg>
+                </div>
               )}
-              <span className="text-sm">{filmStock.photos.length} photos</span>
             </div>
 
-            {displayDescription && (
-              <div className="bg-neutral-900 border border-neutral-800 p-4 mb-4">
-                <h2 className="text-sm font-bold text-white mb-2 uppercase tracking-wide">About</h2>
-                <p className="text-neutral-300 text-sm leading-relaxed whitespace-pre-wrap">
-                  {displayDescription}
-                </p>
-              </div>
-            )}
+            {/* Info */}
+            <div className="flex-1 p-6 md:p-8 lg:p-12 flex flex-col justify-between">
+              <div>
+                {filmStock.brand && (
+                  <div className="text-[#D32F2F] text-sm font-bold uppercase tracking-wider mb-2">
+                    {filmStock.brand}
+                  </div>
+                )}
+                <h1 className="text-3xl md:text-4xl lg:text-5xl font-black text-white mb-4 tracking-tight">
+                  {filmStock.name}
+                </h1>
 
-            {!displayImage && (
-              <div className="mb-4">
+                <div className="flex items-center gap-4 text-neutral-400 mb-6">
+                  {filmStock.iso && (
+                    <div className="flex items-center gap-2 bg-neutral-900 px-3 py-1.5 rounded border border-neutral-800">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      <span className="text-sm font-semibold">ISO {filmStock.iso}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-lg font-semibold">{filmStock.photos.length} photos</span>
+                  </div>
+                </div>
+
+                {displayDescription ? (
+                  <div className="prose prose-invert prose-sm max-w-none">
+                    <p className="text-neutral-300 leading-relaxed whitespace-pre-wrap">
+                      {displayDescription}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="bg-neutral-900/50 border border-dashed border-neutral-700 p-6 rounded">
+                    <p className="text-neutral-500 text-sm mb-3">
+                      Help the community by adding an image and description for this film stock!
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-6">
                 <SuggestEditButton
                   type="filmstock"
                   id={filmStock.id}
@@ -86,36 +119,43 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
                   currentDescription={displayDescription}
                 />
               </div>
-            )}
-
-            {!displayImage && !displayDescription && (
-              <div className="bg-neutral-900 border border-dashed border-neutral-700 p-6 text-center">
-                <p className="text-neutral-500 text-sm">
-                  Help the community by adding an image and description for this film stock!
-                </p>
-              </div>
-            )}
+            </div>
           </div>
         </div>
 
         {/* Photos Grid */}
-        <div className="border-t border-neutral-800 pt-8">
-          <h2 className="text-xl font-bold text-white mb-6">Photos Shot On This Film</h2>
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Photos Shot On This Film</h2>
+            {filmStock.photos.length > 0 && (
+              <span className="text-neutral-500 text-sm">{filmStock.photos.length} {filmStock.photos.length === 1 ? 'photo' : 'photos'}</span>
+            )}
+          </div>
+
           {filmStock.photos.length === 0 ? (
-            <div className="text-center py-24 border border-dashed border-neutral-800">
+            <div className="text-center py-24 border border-dashed border-neutral-800 rounded">
+              <svg className="w-16 h-16 text-neutral-700 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
               <p className="text-neutral-500">No photos yet</p>
+              <p className="text-neutral-600 text-sm mt-2">Be the first to upload a photo with this film</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 md:gap-3">
               {filmStock.photos.map(photo => (
                 <Link
                   key={photo.id}
                   href={`/photos/${photo.id}`}
-                  className="group relative aspect-[3/2] bg-neutral-900"
+                  className="group relative aspect-[3/2] bg-neutral-900 overflow-hidden"
                 >
-                  <Image src={photo.thumbnailPath} alt="" fill className="object-cover" sizes="25vw" />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
-                    <span className="text-white text-sm">{photo.user.name || photo.user.username}</span>
+                  <Image src={photo.thumbnailPath} alt="" fill className="object-cover group-hover:scale-105 transition-transform duration-300" sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-3">
+                    <div className="text-white">
+                      <div className="text-sm font-medium">{photo.user.name || photo.user.username}</div>
+                      {photo.camera && (
+                        <div className="text-xs text-neutral-400">{photo.camera.brand} {photo.camera.name}</div>
+                      )}
+                    </div>
                   </div>
                 </Link>
               ))}

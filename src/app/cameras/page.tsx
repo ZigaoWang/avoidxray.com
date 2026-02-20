@@ -83,10 +83,10 @@ export default async function CamerasPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-white font-bold group-hover:text-[#D32F2F] transition-colors truncate">
+                      <h3 className="text-lg font-bold group-hover:text-[#D32F2F] transition-colors truncate">
                         {camera.brand ? `${camera.brand} ${camera.name}` : camera.name}
                       </h3>
-                      <p className="text-neutral-500 text-sm">{camera._count.photos} photos</p>
+                      <p className="text-neutral-500">{camera._count.photos} photos</p>
                     </div>
                   </div>
                 </Link>
