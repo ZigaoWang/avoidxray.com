@@ -24,18 +24,30 @@ export async function GET() {
     // Get pending cameras
     const pendingCameras = await prisma.camera.findMany({
       where: { imageStatus: 'pending' },
-      include: {
-        user: {
-          select: {
-            id: true,
-            username: true,
-            name: true,
-            avatar: true
-          }
-        }
-      },
       orderBy: { imageUploadedAt: 'desc' }
     })
+
+    // Get uploader info for cameras
+    const camerasWithUploader = await Promise.all(
+      pendingCameras.map(async (camera) => {
+        const uploader = camera.imageUploadedBy
+          ? await prisma.user.findUnique({
+              where: { id: camera.imageUploadedBy },
+              select: {
+                id: true,
+                username: true,
+                name: true,
+                avatar: true
+              }
+            })
+          : null
+
+        return {
+          ...camera,
+          uploader
+        }
+      })
+    )
 
     // Get pending film stocks
     const pendingFilmStocks = await prisma.filmStock.findMany({
@@ -66,9 +78,9 @@ export async function GET() {
     )
 
     return NextResponse.json({
-      cameras: pendingCameras,
+      cameras: camerasWithUploader,
       filmStocks: filmStocksWithUploader,
-      total: pendingCameras.length + pendingFilmStocks.length
+      total: camerasWithUploader.length + filmStocksWithUploader.length
     })
   } catch (error) {
     console.error('Moderation list error:', error)
