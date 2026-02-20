@@ -21,7 +21,7 @@ export default async function AdminPage() {
   const user = await prisma.user.findUnique({ where: { id: userId } })
   if (!user?.isAdmin) redirect('/')
 
-  const [users, photos, comments, stats, cameras, filmStocks, tags, unpublishedCount] = await Promise.all([
+  const [users, photos, comments, stats, cameras, filmStocks, tags, unpublishedCount, pendingModeration] = await Promise.all([
     prisma.user.findMany({
       include: { _count: { select: { photos: true, comments: true } } },
       orderBy: { createdAt: 'desc' }
@@ -45,7 +45,11 @@ export default async function AdminPage() {
     prisma.camera.findMany({ include: { _count: { select: { photos: true } } }, orderBy: { name: 'asc' } }),
     prisma.filmStock.findMany({ include: { _count: { select: { photos: true } } }, orderBy: { name: 'asc' } }),
     prisma.tag.findMany({ include: { _count: { select: { photos: true } } }, orderBy: { name: 'asc' } }),
-    prisma.photo.count({ where: { published: false } })
+    prisma.photo.count({ where: { published: false } }),
+    Promise.all([
+      prisma.camera.count({ where: { imageStatus: 'pending' } }),
+      prisma.filmStock.count({ where: { imageStatus: 'pending' } })
+    ])
   ])
 
   return (
@@ -57,7 +61,7 @@ export default async function AdminPage() {
           <p className="text-neutral-500 mb-8">Manage users, photos, and content</p>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-4">
             <div className="bg-neutral-900 p-4">
               <div className="text-2xl font-bold text-white">{stats[0]}</div>
               <div className="text-neutral-500 text-sm">Users</div>
@@ -83,6 +87,10 @@ export default async function AdminPage() {
                 {unpublishedCount > 0 && <CleanupButton />}
               </div>
             </div>
+            <Link href="/admin/moderation" className="bg-neutral-900 p-4 hover:bg-neutral-800 transition-colors">
+              <div className="text-2xl font-bold text-[#D32F2F]">{pendingModeration[0] + pendingModeration[1]}</div>
+              <div className="text-neutral-500 text-sm">Pending Review</div>
+            </Link>
           </div>
 
           {/* Storage Sync */}

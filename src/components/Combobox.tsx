@@ -1,7 +1,8 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
+import Image from 'next/image'
 
-type Option = { id: string; name: string; brand?: string | null }
+type Option = { id: string; name: string; brand?: string | null; imageUrl?: string | null }
 
 export default function Combobox({
   options,
@@ -76,6 +77,21 @@ export default function Combobox({
   return (
     <div ref={containerRef} className="relative">
       <label className="block text-neutral-500 text-xs uppercase tracking-wider mb-2 font-medium">{label}</label>
+
+      {/* Selected item display with image */}
+      {selected && !open && selected.imageUrl && (
+        <div className="absolute left-3 top-[38px] z-10 pointer-events-none">
+          <div className="relative w-6 h-6">
+            <Image
+              src={selected.imageUrl}
+              alt=""
+              fill
+              className="object-contain"
+            />
+          </div>
+        </div>
+      )}
+
       <input
         ref={inputRef}
         type="text"
@@ -84,18 +100,30 @@ export default function Combobox({
         onFocus={() => { setQuery(''); setOpen(true) }}
         onBlur={handleBlur}
         placeholder={placeholder}
-        className="w-full p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none"
+        className={`w-full p-3 bg-neutral-900 text-white border border-neutral-800 focus:border-[#D32F2F] focus:outline-none ${
+          selected?.imageUrl && !open ? 'pl-11' : ''
+        }`}
       />
       {open && (
-        <div className="absolute z-10 w-full mt-1 bg-neutral-900 border border-neutral-800 max-h-48 overflow-auto">
+        <div className="absolute z-10 w-full mt-1 bg-neutral-900 border border-neutral-800 max-h-64 overflow-auto">
           {filtered.map(o => (
             <button
               key={o.id}
               type="button"
               onClick={() => { onChange(o.id); setQuery(o.brand ? `${o.brand} ${o.name}` : o.name); setOpen(false) }}
-              className="w-full px-3 py-2 text-left text-sm text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors"
+              className="w-full px-3 py-2 text-left text-sm text-neutral-300 hover:bg-neutral-800 hover:text-white transition-colors flex items-center gap-2"
             >
-              {o.brand ? `${o.brand} ${o.name}` : o.name}
+              {o.imageUrl && (
+                <div className="relative w-8 h-8 flex-shrink-0">
+                  <Image
+                    src={o.imageUrl}
+                    alt=""
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+              )}
+              <span>{o.brand ? `${o.brand} ${o.name}` : o.name}</span>
             </button>
           ))}
           {query && !exactMatch && (

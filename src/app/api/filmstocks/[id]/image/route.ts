@@ -1,0 +1,204 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { uploadToOSS, deleteFromOSS } from '@/lib/oss'
+import { sendAdminModerationNotification } from '@/lib/email'
+import sharp from 'sharp'
+
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userId = (session.user as { id: string }).id
+    const { id: filmStockId } = await params
+
+    // Get film stock
+    const filmStock = await prisma.filmStock.findUnique({
+      where: { id: filmStockId }
+    })
+
+    if (!filmStock) {
+      return NextResponse.json({ error: 'Film stock not found' }, { status: 404 })
+    }
+
+    // Get user to check if admin
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    })
+
+    // Check if user is admin OR if they created this film stock
+    // (Film stocks don't have userId, so we check who uploaded first or if admin)
+    const canUpload = user?.isAdmin ||
+                      !filmStock.imageUploadedBy ||
+                      filmStock.imageUploadedBy === userId
+
+    if (!canUpload) {
+      return NextResponse.json(
+        { error: 'You can only upload images for film stocks you created or as an admin' },
+        { status: 403 }
+      )
+    }
+
+    // Parse the form data
+    const formData = await req.formData()
+    const file = formData.get('image') as File
+    const description = formData.get('description') as string | null
+
+    if (!file) {
+      return NextResponse.json({ error: 'No image provided' }, { status: 400 })
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      return NextResponse.json({ error: 'File must be an image' }, { status: 400 })
+    }
+
+    // Process image
+    const buffer = Buffer.from(await file.arrayBuffer())
+
+    // Resize and optimize image (max 800x800, WebP format)
+    const processedBuffer = await sharp(buffer)
+      .resize(800, 800, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .webp({ quality: 85 })
+      .toBuffer()
+
+    // Delete old image if exists (including approved ones being replaced)
+    if (filmStock.imageUrl) {
+      const oldKey = filmStock.imageUrl.split('.com/')[1]
+      if (oldKey) {
+        try {
+          await deleteFromOSS(oldKey)
+          console.log('[Film Stock Image] Deleted old image:', oldKey)
+        } catch (error) {
+          console.error('Failed to delete old image:', error)
+          // Continue anyway - we'll replace it
+        }
+      }
+    }
+
+    // Upload to OSS with timestamp to avoid cache issues
+    const timestamp = Date.now()
+    const key = `filmstocks/${filmStockId}-${timestamp}.webp`
+    const imageUrl = await uploadToOSS(processedBuffer, key)
+
+    // Update film stock with pending status
+    const updatedFilmStock = await prisma.filmStock.update({
+      where: { id: filmStockId },
+      data: {
+        imageUrl,
+        description: description || filmStock.description,
+        imageStatus: 'pending',
+        imageUploadedBy: userId,
+        imageUploadedAt: new Date()
+      }
+    })
+
+    // Send email notification to admin (don't block on email failure)
+    const uploaderUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true }
+    })
+
+    if (uploaderUser) {
+      sendAdminModerationNotification(
+        'filmstock',
+        filmStock.name,
+        filmStock.brand,
+        uploaderUser.username,
+        filmStockId
+      ).catch(err => {
+        console.error('Failed to send admin notification email:', err)
+      })
+    }
+
+    return NextResponse.json({
+      message: 'Image uploaded successfully. Waiting for admin approval.',
+      filmStock: updatedFilmStock
+    })
+  } catch (error) {
+    console.error('Film stock image upload error:', error)
+    return NextResponse.json(
+      { error: 'Failed to upload image' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const userId = (session.user as { id: string }).id
+    const { id: filmStockId } = await params
+
+    // Get film stock
+    const filmStock = await prisma.filmStock.findUnique({
+      where: { id: filmStockId }
+    })
+
+    if (!filmStock) {
+      return NextResponse.json({ error: 'Film stock not found' }, { status: 404 })
+    }
+
+    // Get user to check if admin
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    })
+
+    // Check if user is admin OR if they uploaded this image
+    const canDelete = user?.isAdmin || filmStock.imageUploadedBy === userId
+
+    if (!canDelete) {
+      return NextResponse.json(
+        { error: 'You can only delete images you uploaded or as an admin' },
+        { status: 403 }
+      )
+    }
+
+    // Delete from OSS
+    if (filmStock.imageUrl) {
+      const key = filmStock.imageUrl.split('.com/')[1]
+      if (key) {
+        await deleteFromOSS(key)
+      }
+    }
+
+    // Update film stock
+    const updatedFilmStock = await prisma.filmStock.update({
+      where: { id: filmStockId },
+      data: {
+        imageUrl: null,
+        imageStatus: 'none',
+        imageUploadedBy: null,
+        imageUploadedAt: null
+      }
+    })
+
+    return NextResponse.json({
+      message: 'Image deleted successfully',
+      filmStock: updatedFilmStock
+    })
+  } catch (error) {
+    console.error('Film stock image delete error:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete image' },
+      { status: 500 }
+    )
+  }
+}

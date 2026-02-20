@@ -82,22 +82,32 @@ model Like {
 }
 
 model Camera {
-  id     String  @id @default(cuid())
-  name   String
-  brand  String?
-  userId String
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  photos Photo[]
+  id              String   @id @default(cuid())
+  name            String
+  brand           String?
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos          Photo[]
+  imageUrl        String?
+  description     String?
+  imageStatus     String   @default("none") // none, pending, approved, rejected
+  imageUploadedBy String?
+  imageUploadedAt DateTime?
 
   @@unique([name, userId])
 }
 
 model FilmStock {
-  id     String  @id @default(cuid())
-  name   String  @unique
-  brand  String?
-  iso    Int?
-  photos Photo[]
+  id              String   @id @default(cuid())
+  name            String   @unique
+  brand           String?
+  iso             Int?
+  photos          Photo[]
+  imageUrl        String?
+  description     String?
+  imageStatus     String   @default("none") // none, pending, approved, rejected
+  imageUploadedBy String?
+  imageUploadedAt DateTime?
 }
 
 model Follow {
