@@ -92,6 +92,36 @@ export default async function CameraDetailPage({ params }: { params: Promise<{ i
                   </div>
                 </div>
 
+                {/* Camera Specs */}
+                {(camera.cameraType || camera.format || camera.mountType || camera.year) && (
+                  <div className="grid grid-cols-2 gap-3 mb-6 bg-neutral-900/50 p-4 border border-neutral-800">
+                    {camera.cameraType && (
+                      <div>
+                        <div className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Type</div>
+                        <div className="text-white font-medium">{camera.cameraType}</div>
+                      </div>
+                    )}
+                    {camera.format && (
+                      <div>
+                        <div className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Format</div>
+                        <div className="text-white font-medium">{camera.format}</div>
+                      </div>
+                    )}
+                    {camera.mountType && (
+                      <div>
+                        <div className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Mount</div>
+                        <div className="text-white font-medium">{camera.mountType}</div>
+                      </div>
+                    )}
+                    {camera.year && (
+                      <div>
+                        <div className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Year</div>
+                        <div className="text-white font-medium">{camera.year}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {displayDescription ? (
                   <div className="prose prose-invert prose-sm max-w-none">
                     <p className="text-neutral-300 leading-relaxed whitespace-pre-wrap">
@@ -115,6 +145,8 @@ export default async function CameraDetailPage({ params }: { params: Promise<{ i
                   brand={camera.brand}
                   currentImage={displayImage}
                   currentDescription={displayDescription}
+                  cameraType={camera.cameraType}
+                  format={camera.format}
                 />
               </div>
             </div>

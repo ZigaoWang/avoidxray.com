@@ -94,6 +94,36 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
                   </div>
                 </div>
 
+                {/* Film Specs */}
+                {(filmStock.filmType || filmStock.format || filmStock.process || filmStock.exposures) && (
+                  <div className="grid grid-cols-2 gap-3 mb-6 bg-neutral-900/50 p-4 border border-neutral-800">
+                    {filmStock.filmType && (
+                      <div>
+                        <div className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Type</div>
+                        <div className="text-white font-medium">{filmStock.filmType}</div>
+                      </div>
+                    )}
+                    {filmStock.format && (
+                      <div>
+                        <div className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Format</div>
+                        <div className="text-white font-medium">{filmStock.format}</div>
+                      </div>
+                    )}
+                    {filmStock.process && (
+                      <div>
+                        <div className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Process</div>
+                        <div className="text-white font-medium">{filmStock.process}</div>
+                      </div>
+                    )}
+                    {filmStock.exposures && (
+                      <div>
+                        <div className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Exposures</div>
+                        <div className="text-white font-medium">{filmStock.exposures}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {displayDescription ? (
                   <div className="prose prose-invert prose-sm max-w-none">
                     <p className="text-neutral-300 leading-relaxed whitespace-pre-wrap">
@@ -117,6 +147,9 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
                   brand={filmStock.brand}
                   currentImage={displayImage}
                   currentDescription={displayDescription}
+                  filmType={filmStock.filmType}
+                  format={filmStock.format}
+                  iso={filmStock.iso}
                 />
               </div>
             </div>

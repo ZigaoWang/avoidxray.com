@@ -45,6 +45,10 @@ export async function POST(
     const formData = await req.formData()
     const file = formData.get('image') as File | null
     const description = formData.get('description') as string | null
+    const cameraType = formData.get('cameraType') as string | null
+    const format = formData.get('format') as string | null
+    const mountType = formData.get('mountType') as string | null
+    const year = formData.get('year') as string | null
 
     // Need at least one of image or description
     if (!file && !description) {
@@ -114,7 +118,11 @@ export async function POST(
         description: description || camera.description,
         imageStatus,
         imageUploadedBy: userId,
-        imageUploadedAt: new Date()
+        imageUploadedAt: new Date(),
+        ...(cameraType && { cameraType }),
+        ...(format && { format }),
+        ...(mountType && { mountType }),
+        ...(year && { year: parseInt(year) })
       }
     })
 

@@ -92,6 +92,11 @@ model Camera {
   imageStatus     String   @default("none") // none, pending, approved, rejected
   imageUploadedBy String?
   imageUploadedAt DateTime?
+  // Categorization
+  cameraType      String?  // SLR, Rangefinder, Point & Shoot, TLR, Medium Format, Large Format, Instant
+  format          String?  // 35mm, Medium Format (120/220), Large Format (4x5, 8x10), APS, 110, Half-frame
+  mountType       String?  // Canon FD, Nikon F, Pentax K, M42, Leica M, etc.
+  year            Int?     // Year of manufacture/release
 
   @@unique([name, userId])
 }
@@ -107,6 +112,11 @@ model FilmStock {
   imageStatus     String   @default("none") // none, pending, approved, rejected
   imageUploadedBy String?
   imageUploadedAt DateTime?
+  // Categorization
+  filmType        String?  // Color Negative (C-41), Slide/Transparency (E-6), Black & White, Instant, Specialty
+  format          String?  // 35mm, 120 (Medium Format), 220, 4x5, 8x10, Instant
+  process         String?  // C-41, E-6, Black & White, ECN-2, Instant
+  exposures       String?  // 24, 36, 12, 16, or "24, 36" for multiple
 }
 
 model Follow {

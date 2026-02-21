@@ -50,6 +50,11 @@ export async function POST(
     const formData = await req.formData()
     const file = formData.get('image') as File | null
     const description = formData.get('description') as string | null
+    const filmType = formData.get('filmType') as string | null
+    const format = formData.get('format') as string | null
+    const process = formData.get('process') as string | null
+    const exposures = formData.get('exposures') as string | null
+    const iso = formData.get('iso') as string | null
 
     // Need at least one of image or description
     if (!file && !description) {
@@ -119,7 +124,12 @@ export async function POST(
         description: description || filmStock.description,
         imageStatus,
         imageUploadedBy: userId,
-        imageUploadedAt: new Date()
+        imageUploadedAt: new Date(),
+        ...(filmType && { filmType }),
+        ...(format && { format }),
+        ...(process && { process }),
+        ...(exposures && { exposures }),
+        ...(iso && { iso: parseInt(iso) })
       }
     })
 

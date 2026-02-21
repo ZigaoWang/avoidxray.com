@@ -12,6 +12,12 @@ type SuggestEditModalProps = {
   brand: string | null
   currentImage: string | null
   currentDescription: string | null
+  // Camera props
+  cameraType?: string | null
+  format?: string | null
+  // Film props
+  filmType?: string | null
+  iso?: number | null
   onClose: () => void
 }
 
@@ -22,6 +28,10 @@ export default function SuggestEditModal({
   brand,
   currentImage,
   currentDescription,
+  cameraType: initialCameraType,
+  format: initialFormat,
+  filmType: initialFilmType,
+  iso: initialIso,
   onClose
 }: SuggestEditModalProps) {
   const { data: session } = useSession()
@@ -30,6 +40,19 @@ export default function SuggestEditModal({
   const [description, setDescription] = useState(currentDescription || '')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+
+  // Camera fields
+  const [cameraType, setCameraType] = useState(initialCameraType || '')
+  const [format, setFormat] = useState(initialFormat || '')
+
+  // Film fields
+  const [filmType, setFilmType] = useState(initialFilmType || '')
+  const [iso, setIso] = useState(initialIso?.toString() || '')
+
+  // Custom "Other" values
+  const [customCameraType, setCustomCameraType] = useState('')
+  const [customFormat, setCustomFormat] = useState('')
+  const [customFilmType, setCustomFilmType] = useState('')
 
   if (!session) {
     return (
@@ -79,6 +102,22 @@ export default function SuggestEditModal({
         formData.append('image', imageFile)
       }
       formData.append('description', description)
+
+      // Add categorization fields with "Other" handling
+      if (type === 'camera') {
+        const finalCameraType = cameraType === 'Other' ? customCameraType : cameraType
+        const finalFormat = format === 'Other' ? customFormat : format
+
+        if (finalCameraType) formData.append('cameraType', finalCameraType)
+        if (finalFormat) formData.append('format', finalFormat)
+      } else {
+        const finalFilmType = filmType === 'Other' ? customFilmType : filmType
+        const finalFormat = format === 'Other' ? customFormat : format
+
+        if (finalFilmType) formData.append('filmType', finalFilmType)
+        if (finalFormat) formData.append('format', finalFormat)
+        if (iso) formData.append('iso', iso)
+      }
 
       const endpoint = type === 'camera' ? `/api/cameras/${id}/image` : `/api/filmstocks/${id}/image`
       const res = await fetch(endpoint, {
@@ -183,10 +222,144 @@ export default function SuggestEditModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder={`Tell users about this ${type}...`}
-              className="w-full bg-neutral-800 text-white p-3 text-sm"
+              className="w-full bg-neutral-800 text-white p-3 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none"
               rows={4}
             />
           </div>
+
+          {/* Camera Categorization Fields */}
+          {type === 'camera' && (
+            <div className="space-y-4 bg-neutral-800 border border-neutral-700 p-4">
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Camera Details</h3>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-neutral-400 mb-1">Type</label>
+                  <select
+                    value={cameraType}
+                    onChange={(e) => setCameraType(e.target.value)}
+                    className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none"
+                  >
+                    <option value="">Select...</option>
+                    <option value="SLR">SLR</option>
+                    <option value="Rangefinder">Rangefinder</option>
+                    <option value="Point & Shoot">Point & Shoot</option>
+                    <option value="TLR">TLR</option>
+                    <option value="Medium Format">Medium Format</option>
+                    <option value="Large Format">Large Format</option>
+                    <option value="Instant">Instant</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  {cameraType === 'Other' && (
+                    <input
+                      type="text"
+                      value={customCameraType}
+                      onChange={(e) => setCustomCameraType(e.target.value)}
+                      placeholder="e.g. Pinhole"
+                      className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none mt-2"
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs text-neutral-400 mb-1">Format</label>
+                  <select
+                    value={format}
+                    onChange={(e) => setFormat(e.target.value)}
+                    className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none"
+                  >
+                    <option value="">Select...</option>
+                    <option value="35mm">35mm</option>
+                    <option value="120">120</option>
+                    <option value="4x5">4x5</option>
+                    <option value="8x10">8x10</option>
+                    <option value="Instant">Instant</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  {format === 'Other' && (
+                    <input
+                      type="text"
+                      value={customFormat}
+                      onChange={(e) => setCustomFormat(e.target.value)}
+                      placeholder="e.g. 127"
+                      className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none mt-2"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Film Categorization Fields */}
+          {type === 'filmstock' && (
+            <div className="space-y-4 bg-neutral-800 border border-neutral-700 p-4">
+              <h3 className="text-sm font-semibold text-white uppercase tracking-wider">Film Details</h3>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs text-neutral-400 mb-1">Type</label>
+                  <select
+                    value={filmType}
+                    onChange={(e) => setFilmType(e.target.value)}
+                    className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none"
+                  >
+                    <option value="">Select...</option>
+                    <option value="Color Negative">Color Negative</option>
+                    <option value="Black & White">Black & White</option>
+                    <option value="Slide">Slide</option>
+                    <option value="Instant">Instant</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  {filmType === 'Other' && (
+                    <input
+                      type="text"
+                      value={customFilmType}
+                      onChange={(e) => setCustomFilmType(e.target.value)}
+                      placeholder="e.g. Infrared"
+                      className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none mt-2"
+                    />
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs text-neutral-400 mb-1">Format</label>
+                  <select
+                    value={format}
+                    onChange={(e) => setFormat(e.target.value)}
+                    className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none"
+                  >
+                    <option value="">Select...</option>
+                    <option value="35mm">35mm</option>
+                    <option value="120">120</option>
+                    <option value="4x5">4x5</option>
+                    <option value="8x10">8x10</option>
+                    <option value="Instant">Instant</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  {format === 'Other' && (
+                    <input
+                      type="text"
+                      value={customFormat}
+                      onChange={(e) => setCustomFormat(e.target.value)}
+                      placeholder="e.g. 127"
+                      className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none mt-2"
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-neutral-400 mb-1">ISO</label>
+                <input
+                  type="number"
+                  value={iso}
+                  onChange={(e) => setIso(e.target.value)}
+                  placeholder="400"
+                  className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none"
+                />
+              </div>
+            </div>
+          )}
 
           {/* Info */}
           <div className="bg-neutral-800 border border-neutral-700 p-4">
