@@ -13,6 +13,7 @@ type SuggestEditButtonProps = {
   // Camera props
   cameraType?: string | null
   format?: string | null
+  year?: number | null
   // Film props
   filmType?: string | null
   iso?: number | null
@@ -27,6 +28,7 @@ export default function SuggestEditButton({
   currentDescription,
   cameraType,
   format,
+  year,
   filmType,
   iso
 }: SuggestEditButtonProps) {
@@ -54,6 +56,7 @@ export default function SuggestEditButton({
           currentDescription={currentDescription}
           cameraType={cameraType}
           format={format}
+          year={year}
           filmType={filmType}
           iso={iso}
           onClose={() => setShowModal(false)}

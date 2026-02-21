@@ -6,11 +6,24 @@ import { uploadToOSS, deleteFromOSS } from '@/lib/oss'
 import { sendAdminModerationNotification } from '@/lib/email'
 import sharp from 'sharp'
 
+// Validation helpers
+function validateYear(year: string): boolean {
+  const yearNum = parseInt(year)
+  return !isNaN(yearNum) && yearNum >= 1800 && yearNum <= new Date().getFullYear()
+}
+
+function sanitizeString(str: string | null): string | null {
+  if (!str) return null
+  const trimmed = str.trim()
+  return trimmed.length > 0 ? trimmed : null
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Auth check
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -19,145 +32,193 @@ export async function POST(
     const userId = (session.user as { id: string }).id
     const { id: cameraId } = await params
 
-    // Get camera and check permissions
-    const camera = await prisma.camera.findUnique({
-      where: { id: cameraId },
-      include: { user: true }
-    })
+    // Get camera and user in parallel
+    const [camera, user] = await Promise.all([
+      prisma.camera.findUnique({ where: { id: cameraId } }),
+      prisma.user.findUnique({ where: { id: userId } })
+    ])
 
     if (!camera) {
       return NextResponse.json({ error: 'Camera not found' }, { status: 404 })
     }
 
-    // Check if user is the owner or admin
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
-    })
-
+    // Permission check: only owner or admin can edit
     if (camera.userId !== userId && !user?.isAdmin) {
       return NextResponse.json(
-        { error: 'You can only upload images for your own cameras' },
+        { error: 'You can only edit your own cameras' },
         { status: 403 }
       )
     }
 
-    // Parse the form data
+    // Parse form data
     const formData = await req.formData()
     const file = formData.get('image') as File | null
-    const description = formData.get('description') as string | null
-    const cameraType = formData.get('cameraType') as string | null
-    const format = formData.get('format') as string | null
-    const mountType = formData.get('mountType') as string | null
-    const year = formData.get('year') as string | null
+    const rawDescription = formData.get('description') as string | null
+    const rawCameraType = formData.get('cameraType') as string | null
+    const rawFormat = formData.get('format') as string | null
+    const rawMountType = formData.get('mountType') as string | null
+    const rawYear = formData.get('year') as string | null
 
-    // Need at least one of image or description
-    if (!file && !description) {
-      return NextResponse.json({ error: 'Provide an image or description' }, { status: 400 })
+    // Sanitize inputs
+    const description = sanitizeString(rawDescription)
+    const cameraType = sanitizeString(rawCameraType)
+    const format = sanitizeString(rawFormat)
+    const mountType = sanitizeString(rawMountType)
+    const year = sanitizeString(rawYear)
+
+    // Validate year if provided
+    if (year && !validateYear(year)) {
+      return NextResponse.json(
+        { error: 'Invalid year. Must be between 1800 and current year.' },
+        { status: 400 }
+      )
     }
 
-    // Validate file type if image provided
-    if (file && !file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'File must be an image' }, { status: 400 })
+    // Check if any changes were made
+    const descriptionChanged = description !== null && description !== camera.description
+    const hasCategorizationChanges = cameraType || format || mountType || year
+
+    if (!file && !descriptionChanged && !hasCategorizationChanges) {
+      return NextResponse.json(
+        { error: 'No changes detected. Please modify at least one field.' },
+        { status: 400 }
+      )
+    }
+
+    // Validate file if provided
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        return NextResponse.json({ error: 'File must be an image' }, { status: 400 })
+      }
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        return NextResponse.json({ error: 'Image must be smaller than 10MB' }, { status: 400 })
+      }
     }
 
     let imageUrl = camera.imageUrl
 
-    // Process and upload image only if provided
+    // Process image if uploaded
     if (file) {
-      // Process image
-      const buffer = Buffer.from(await file.arrayBuffer())
+      try {
+        const buffer = Buffer.from(await file.arrayBuffer())
 
-      // Trim transparent background and add padding (max 1200x1200, WebP format)
-      const processedBuffer = await sharp(buffer)
-        .trim({
-          background: { r: 0, g: 0, b: 0, alpha: 0 },
-          threshold: 10
-        })
-        .extend({
-          top: 40,
-          bottom: 40,
-          left: 40,
-          right: 40,
-          background: { r: 0, g: 0, b: 0, alpha: 0 }
-        })
-        .resize(1200, 1200, {
-          fit: 'inside',
-          withoutEnlargement: true
-        })
-        .webp({ quality: 90 })
-        .toBuffer()
+        // Process image: trim, pad, resize, convert to WebP
+        const processedBuffer = await sharp(buffer)
+          .trim({
+            background: { r: 0, g: 0, b: 0, alpha: 0 },
+            threshold: 10
+          })
+          .extend({
+            top: 40,
+            bottom: 40,
+            left: 40,
+            right: 40,
+            background: { r: 0, g: 0, b: 0, alpha: 0 }
+          })
+          .resize(1200, 1200, {
+            fit: 'inside',
+            withoutEnlargement: true
+          })
+          .webp({ quality: 90 })
+          .toBuffer()
 
-      // Delete old image if exists (including approved ones being replaced)
-      if (camera.imageUrl) {
-        const oldKey = camera.imageUrl.split('.com/')[1]
-        if (oldKey) {
-          try {
-            await deleteFromOSS(oldKey)
-            console.log('[Camera Image] Deleted old image:', oldKey)
-          } catch (error) {
-            console.error('Failed to delete old image:', error)
-            // Continue anyway - we'll replace it
+        // Delete old image if exists
+        if (camera.imageUrl) {
+          const oldKey = camera.imageUrl.split('.com/')[1]
+          if (oldKey) {
+            try {
+              await deleteFromOSS(oldKey)
+              console.log('[Camera] Deleted old image:', oldKey)
+            } catch (error) {
+              console.error('[Camera] Failed to delete old image:', error)
+            }
           }
         }
-      }
 
-      // Upload to OSS with timestamp to avoid cache issues
-      const timestamp = Date.now()
-      const key = `cameras/${cameraId}-${timestamp}.webp`
-      imageUrl = await uploadToOSS(processedBuffer, key)
+        // Upload new image
+        const timestamp = Date.now()
+        const key = `cameras/${cameraId}-${timestamp}.webp`
+        imageUrl = await uploadToOSS(processedBuffer, key)
+      } catch (error) {
+        console.error('[Camera] Image processing error:', error)
+        return NextResponse.json(
+          { error: 'Failed to process image' },
+          { status: 500 }
+        )
+      }
     }
 
-    // If admin, auto-approve; otherwise set to pending
-    const imageStatus = user?.isAdmin ? 'approved' : 'pending'
+    // Build update data
+    const updateData: any = {}
+
+    // All changes require moderation (unless admin)
+    const needsModeration = !user?.isAdmin
+
+    // Description and categorization
+    if (descriptionChanged) {
+      updateData.description = description
+    }
+    if (cameraType) updateData.cameraType = cameraType
+    if (format) updateData.format = format
+    if (mountType) updateData.mountType = mountType
+    if (year) updateData.year = parseInt(year)
+
+    // Image upload
+    if (file) {
+      updateData.imageUrl = imageUrl
+      updateData.imageUploadedBy = userId
+      updateData.imageUploadedAt = new Date()
+    }
+
+    // Set moderation status for ANY change
+    if (needsModeration) {
+      updateData.imageStatus = 'pending'
+      updateData.imageUploadedBy = userId
+      updateData.imageUploadedAt = new Date()
+    } else {
+      // Admin: auto-approve
+      updateData.imageStatus = 'approved'
+      if (file) {
+        updateData.imageUploadedBy = userId
+        updateData.imageUploadedAt = new Date()
+      }
+    }
 
     // Update camera
     const updatedCamera = await prisma.camera.update({
       where: { id: cameraId },
-      data: {
-        imageUrl,
-        description: description || camera.description,
-        imageStatus,
-        imageUploadedBy: userId,
-        imageUploadedAt: new Date(),
-        ...(cameraType && { cameraType }),
-        ...(format && { format }),
-        ...(mountType && { mountType }),
-        ...(year && { year: parseInt(year) })
-      }
+      data: updateData
     })
 
-    // Send email notification to admin only if not admin (don't block on email failure)
-    if (!user?.isAdmin) {
-      const uploaderUser = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { username: true }
+    // Send admin notification for ALL changes by non-admins (not just images)
+    if (!user?.isAdmin && user) {
+      sendAdminModerationNotification(
+        'camera',
+        camera.name,
+        camera.brand,
+        user.username || user.email || 'Unknown',
+        cameraId
+      ).catch(err => {
+        console.error('[Camera] Failed to send admin notification:', err)
       })
-
-      if (uploaderUser) {
-        sendAdminModerationNotification(
-          'camera',
-          camera.name,
-          camera.brand,
-          uploaderUser.username,
-          cameraId
-        ).catch(err => {
-          console.error('Failed to send admin notification email:', err)
-        })
-      }
     }
 
+    // Success message
     const message = user?.isAdmin
-      ? 'Image uploaded and approved successfully.'
-      : 'Image uploaded successfully. Waiting for admin approval.'
+      ? 'Changes saved and approved.'
+      : 'Changes submitted successfully. Waiting for admin review.'
 
     return NextResponse.json({
+      success: true,
       message,
       camera: updatedCamera
     })
+
   } catch (error) {
-    console.error('Camera image upload error:', error)
+    console.error('[Camera] Update error:', error)
     return NextResponse.json(
-      { error: 'Failed to upload image' },
+      { error: 'Failed to save changes. Please try again.' },
       { status: 500 }
     )
   }
@@ -168,6 +229,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Auth check
     const session = await getServerSession(authOptions)
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -176,20 +238,17 @@ export async function DELETE(
     const userId = (session.user as { id: string }).id
     const { id: cameraId } = await params
 
-    // Get camera and check permissions
-    const camera = await prisma.camera.findUnique({
-      where: { id: cameraId }
-    })
+    // Get camera and user in parallel
+    const [camera, user] = await Promise.all([
+      prisma.camera.findUnique({ where: { id: cameraId } }),
+      prisma.user.findUnique({ where: { id: userId } })
+    ])
 
     if (!camera) {
       return NextResponse.json({ error: 'Camera not found' }, { status: 404 })
     }
 
-    // Check if user is the owner or admin
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
-    })
-
+    // Permission check
     if (camera.userId !== userId && !user?.isAdmin) {
       return NextResponse.json(
         { error: 'You can only delete images for your own cameras' },
@@ -201,7 +260,13 @@ export async function DELETE(
     if (camera.imageUrl) {
       const key = camera.imageUrl.split('.com/')[1]
       if (key) {
-        await deleteFromOSS(key)
+        try {
+          await deleteFromOSS(key)
+          console.log('[Camera] Deleted image:', key)
+        } catch (error) {
+          console.error('[Camera] Failed to delete image from OSS:', error)
+          // Continue anyway
+        }
       }
     }
 
@@ -217,11 +282,13 @@ export async function DELETE(
     })
 
     return NextResponse.json({
+      success: true,
       message: 'Image deleted successfully',
       camera: updatedCamera
     })
+
   } catch (error) {
-    console.error('Camera image delete error:', error)
+    console.error('[Camera] Delete error:', error)
     return NextResponse.json(
       { error: 'Failed to delete image' },
       { status: 500 }

@@ -15,6 +15,7 @@ type SuggestEditModalProps = {
   // Camera props
   cameraType?: string | null
   format?: string | null
+  year?: number | null
   // Film props
   filmType?: string | null
   iso?: number | null
@@ -30,6 +31,7 @@ export default function SuggestEditModal({
   currentDescription,
   cameraType: initialCameraType,
   format: initialFormat,
+  year: initialYear,
   filmType: initialFilmType,
   iso: initialIso,
   onClose
@@ -44,6 +46,7 @@ export default function SuggestEditModal({
   // Camera fields
   const [cameraType, setCameraType] = useState(initialCameraType || '')
   const [format, setFormat] = useState(initialFormat || '')
+  const [year, setYear] = useState(initialYear?.toString() || '')
 
   // Film fields
   const [filmType, setFilmType] = useState(initialFilmType || '')
@@ -90,7 +93,13 @@ export default function SuggestEditModal({
   }
 
   const handleSubmit = async () => {
-    if (!imageFile && !description && description === currentDescription) {
+    // Check if any changes were made
+    const descriptionChanged = description !== currentDescription
+    const hasCategorizationChanges = type === 'camera'
+      ? (cameraType || format || year)
+      : (filmType || format || iso)
+
+    if (!imageFile && !descriptionChanged && !hasCategorizationChanges) {
       alert('Please make some changes to submit')
       return
     }
@@ -110,6 +119,7 @@ export default function SuggestEditModal({
 
         if (finalCameraType) formData.append('cameraType', finalCameraType)
         if (finalFormat) formData.append('format', finalFormat)
+        if (year) formData.append('year', year)
       } else {
         const finalFilmType = filmType === 'Other' ? customFilmType : filmType
         const finalFormat = format === 'Other' ? customFormat : format
@@ -230,62 +240,79 @@ export default function SuggestEditModal({
 
           {/* Camera Categorization Fields */}
           {type === 'camera' && (
-            <div className="space-y-3 md:space-y-4 bg-neutral-800 border border-neutral-700 p-3 md:p-4">
-              <h3 className="text-xs md:text-sm font-semibold text-white uppercase tracking-wider">Camera Details</h3>
+            <div className="bg-neutral-800 border border-neutral-800 rounded-sm">
+              <div className="border-b border-neutral-700 px-4 py-3">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wide">Camera Details</h3>
+              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                <div>
-                  <label className="block text-xs text-neutral-400 mb-1">Type</label>
-                  <select
-                    value={cameraType}
-                    onChange={(e) => setCameraType(e.target.value)}
-                    className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none"
-                  >
-                    <option value="">Select...</option>
-                    <option value="SLR">SLR</option>
-                    <option value="Rangefinder">Rangefinder</option>
-                    <option value="Point & Shoot">Point & Shoot</option>
-                    <option value="TLR">TLR</option>
-                    <option value="Medium Format">Medium Format</option>
-                    <option value="Large Format">Large Format</option>
-                    <option value="Instant">Instant</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  {cameraType === 'Other' && (
-                    <input
-                      type="text"
-                      value={customCameraType}
-                      onChange={(e) => setCustomCameraType(e.target.value)}
-                      placeholder="e.g. Pinhole"
-                      className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none mt-2"
-                    />
-                  )}
+              <div className="p-4 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-400 mb-2">Type</label>
+                    <select
+                      value={cameraType}
+                      onChange={(e) => setCameraType(e.target.value)}
+                      className="w-full bg-neutral-900 text-white px-3 py-2.5 text-sm border border-neutral-700 rounded-sm focus:border-[#D32F2F] focus:outline-none focus:ring-1 focus:ring-[#D32F2F]"
+                    >
+                      <option value="">Select type...</option>
+                      <option value="SLR">SLR</option>
+                      <option value="Rangefinder">Rangefinder</option>
+                      <option value="Point & Shoot">Point & Shoot</option>
+                      <option value="TLR">TLR</option>
+                      <option value="Medium Format">Medium Format</option>
+                      <option value="Large Format">Large Format</option>
+                      <option value="Instant">Instant</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    {cameraType === 'Other' && (
+                      <input
+                        type="text"
+                        value={customCameraType}
+                        onChange={(e) => setCustomCameraType(e.target.value)}
+                        placeholder="e.g. Pinhole"
+                        className="w-full bg-neutral-900 text-white px-3 py-2.5 text-sm border border-neutral-700 rounded-sm focus:border-[#D32F2F] focus:outline-none focus:ring-1 focus:ring-[#D32F2F] mt-2"
+                      />
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-400 mb-2">Format</label>
+                    <select
+                      value={format}
+                      onChange={(e) => setFormat(e.target.value)}
+                      className="w-full bg-neutral-900 text-white px-3 py-2.5 text-sm border border-neutral-700 rounded-sm focus:border-[#D32F2F] focus:outline-none focus:ring-1 focus:ring-[#D32F2F]"
+                    >
+                      <option value="">Select format...</option>
+                      <option value="35mm">35mm</option>
+                      <option value="120">120</option>
+                      <option value="4x5">4x5</option>
+                      <option value="8x10">8x10</option>
+                      <option value="Instant">Instant</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    {format === 'Other' && (
+                      <input
+                        type="text"
+                        value={customFormat}
+                        onChange={(e) => setCustomFormat(e.target.value)}
+                        placeholder="e.g. 127"
+                        className="w-full bg-neutral-900 text-white px-3 py-2.5 text-sm border border-neutral-700 rounded-sm focus:border-[#D32F2F] focus:outline-none focus:ring-1 focus:ring-[#D32F2F] mt-2"
+                      />
+                    )}
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs text-neutral-400 mb-1">Format</label>
-                  <select
-                    value={format}
-                    onChange={(e) => setFormat(e.target.value)}
-                    className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none"
-                  >
-                    <option value="">Select...</option>
-                    <option value="35mm">35mm</option>
-                    <option value="120">120</option>
-                    <option value="4x5">4x5</option>
-                    <option value="8x10">8x10</option>
-                    <option value="Instant">Instant</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  {format === 'Other' && (
-                    <input
-                      type="text"
-                      value={customFormat}
-                      onChange={(e) => setCustomFormat(e.target.value)}
-                      placeholder="e.g. 127"
-                      className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none mt-2"
-                    />
-                  )}
+                  <label className="block text-xs font-medium text-neutral-400 mb-2">Year Released</label>
+                  <input
+                    type="number"
+                    value={year}
+                    onChange={(e) => setYear(e.target.value)}
+                    placeholder="1990"
+                    min="1800"
+                    max={new Date().getFullYear()}
+                    className="w-full bg-neutral-900 text-white px-3 py-2.5 text-sm border border-neutral-700 rounded-sm focus:border-[#D32F2F] focus:outline-none focus:ring-1 focus:ring-[#D32F2F]"
+                  />
                 </div>
               </div>
             </div>
@@ -293,71 +320,76 @@ export default function SuggestEditModal({
 
           {/* Film Categorization Fields */}
           {type === 'filmstock' && (
-            <div className="space-y-3 md:space-y-4 bg-neutral-800 border border-neutral-700 p-3 md:p-4">
-              <h3 className="text-xs md:text-sm font-semibold text-white uppercase tracking-wider">Film Details</h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                <div>
-                  <label className="block text-xs text-neutral-400 mb-1">Type</label>
-                  <select
-                    value={filmType}
-                    onChange={(e) => setFilmType(e.target.value)}
-                    className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none"
-                  >
-                    <option value="">Select...</option>
-                    <option value="Color Negative">Color Negative</option>
-                    <option value="Black & White">Black & White</option>
-                    <option value="Slide">Slide</option>
-                    <option value="Instant">Instant</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  {filmType === 'Other' && (
-                    <input
-                      type="text"
-                      value={customFilmType}
-                      onChange={(e) => setCustomFilmType(e.target.value)}
-                      placeholder="e.g. Infrared"
-                      className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none mt-2"
-                    />
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-xs text-neutral-400 mb-1">Format</label>
-                  <select
-                    value={format}
-                    onChange={(e) => setFormat(e.target.value)}
-                    className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none"
-                  >
-                    <option value="">Select...</option>
-                    <option value="35mm">35mm</option>
-                    <option value="120">120</option>
-                    <option value="4x5">4x5</option>
-                    <option value="8x10">8x10</option>
-                    <option value="Instant">Instant</option>
-                    <option value="Other">Other</option>
-                  </select>
-                  {format === 'Other' && (
-                    <input
-                      type="text"
-                      value={customFormat}
-                      onChange={(e) => setCustomFormat(e.target.value)}
-                      placeholder="e.g. 127"
-                      className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none mt-2"
-                    />
-                  )}
-                </div>
+            <div className="bg-neutral-800 border border-neutral-800 rounded-sm">
+              <div className="border-b border-neutral-700 px-4 py-3">
+                <h3 className="text-sm font-bold text-white uppercase tracking-wide">Film Details</h3>
               </div>
 
-              <div>
-                <label className="block text-xs text-neutral-400 mb-1">ISO</label>
-                <input
-                  type="number"
-                  value={iso}
-                  onChange={(e) => setIso(e.target.value)}
-                  placeholder="400"
-                  className="w-full bg-neutral-900 text-white p-2 text-sm border border-neutral-700 focus:border-[#D32F2F] focus:outline-none"
-                />
+              <div className="p-4 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-400 mb-2">Type</label>
+                    <select
+                      value={filmType}
+                      onChange={(e) => setFilmType(e.target.value)}
+                      className="w-full bg-neutral-900 text-white px-3 py-2.5 text-sm border border-neutral-700 rounded-sm focus:border-[#D32F2F] focus:outline-none focus:ring-1 focus:ring-[#D32F2F]"
+                    >
+                      <option value="">Select type...</option>
+                      <option value="Color Negative">Color Negative</option>
+                      <option value="Black & White">Black & White</option>
+                      <option value="Slide">Slide</option>
+                      <option value="Instant">Instant</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    {filmType === 'Other' && (
+                      <input
+                        type="text"
+                        value={customFilmType}
+                        onChange={(e) => setCustomFilmType(e.target.value)}
+                        placeholder="e.g. Infrared"
+                        className="w-full bg-neutral-900 text-white px-3 py-2.5 text-sm border border-neutral-700 rounded-sm focus:border-[#D32F2F] focus:outline-none focus:ring-1 focus:ring-[#D32F2F] mt-2"
+                      />
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-400 mb-2">Format</label>
+                    <select
+                      value={format}
+                      onChange={(e) => setFormat(e.target.value)}
+                      className="w-full bg-neutral-900 text-white px-3 py-2.5 text-sm border border-neutral-700 rounded-sm focus:border-[#D32F2F] focus:outline-none focus:ring-1 focus:ring-[#D32F2F]"
+                    >
+                      <option value="">Select format...</option>
+                      <option value="35mm">35mm</option>
+                      <option value="120">120</option>
+                      <option value="4x5">4x5</option>
+                      <option value="8x10">8x10</option>
+                      <option value="Instant">Instant</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    {format === 'Other' && (
+                      <input
+                        type="text"
+                        value={customFormat}
+                        onChange={(e) => setCustomFormat(e.target.value)}
+                        placeholder="e.g. 127"
+                        className="w-full bg-neutral-900 text-white px-3 py-2.5 text-sm border border-neutral-700 rounded-sm focus:border-[#D32F2F] focus:outline-none focus:ring-1 focus:ring-[#D32F2F] mt-2"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-neutral-400 mb-2">ISO Speed</label>
+                  <input
+                    type="number"
+                    value={iso}
+                    onChange={(e) => setIso(e.target.value)}
+                    placeholder="400"
+                    min="1"
+                    className="w-full bg-neutral-900 text-white px-3 py-2.5 text-sm border border-neutral-700 rounded-sm focus:border-[#D32F2F] focus:outline-none focus:ring-1 focus:ring-[#D32F2F]"
+                  />
+                </div>
               </div>
             </div>
           )}
