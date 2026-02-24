@@ -25,7 +25,34 @@ export async function DELETE(req: NextRequest) {
   const { type, id } = await req.json()
 
   if (type === 'user') {
+    // Get all photos from this user to delete from OSS
+    const photos = await prisma.photo.findMany({
+      where: { userId: id },
+      select: { originalPath: true, mediumPath: true, thumbnailPath: true }
+    })
+
+    // Delete all photo files from OSS
+    const ossKeys = photos.flatMap(photo =>
+      [photo.originalPath, photo.mediumPath, photo.thumbnailPath]
+        .map(getOSSKey)
+        .filter((k): k is string => k !== null)
+    )
+    await Promise.all(ossKeys.map(key => deleteFromOSS(key).catch(() => {})))
+
+    // Delete notifications where this user is the actor (not covered by cascade)
+    await prisma.notification.deleteMany({ where: { actorId: id } })
+
+    // Delete moderation submissions by this user
+    await prisma.moderationSubmission.deleteMany({ where: { submittedBy: id } })
+
+    // Now delete the user (cascades to photos, likes, comments, follows, notifications, collections, cameras)
     await prisma.user.delete({ where: { id } })
+
+    // Clean up orphaned cameras and film stocks
+    await Promise.all([
+      prisma.camera.deleteMany({ where: { photos: { none: {} } } }),
+      prisma.filmStock.deleteMany({ where: { photos: { none: {} } } })
+    ])
   } else if (type === 'photo') {
     const photo = await prisma.photo.findUnique({ where: { id } })
     if (photo) {
@@ -64,6 +91,35 @@ export async function PATCH(req: NextRequest) {
     await prisma.camera.update({ where: { id }, data: { name, brand } })
   } else if (type === 'filmStock') {
     await prisma.filmStock.update({ where: { id }, data: { name, brand } })
+  } else if (type === 'cleanup') {
+    // Clean up orphaned records from deleted users
+    const existingUserIds = (await prisma.user.findMany({ select: { id: true } })).map(u => u.id)
+
+    // Delete notifications where actor no longer exists
+    const deletedNotifications = await prisma.notification.deleteMany({
+      where: { actorId: { notIn: existingUserIds } }
+    })
+
+    // Delete moderation submissions where submitter no longer exists
+    const deletedSubmissions = await prisma.moderationSubmission.deleteMany({
+      where: { submittedBy: { notIn: existingUserIds } }
+    })
+
+    // Clean up orphaned cameras and film stocks
+    const [deletedCameras, deletedFilmStocks] = await Promise.all([
+      prisma.camera.deleteMany({ where: { photos: { none: {} } } }),
+      prisma.filmStock.deleteMany({ where: { photos: { none: {} } } })
+    ])
+
+    return NextResponse.json({
+      success: true,
+      cleaned: {
+        notifications: deletedNotifications.count,
+        moderationSubmissions: deletedSubmissions.count,
+        cameras: deletedCameras.count,
+        filmStocks: deletedFilmStocks.count
+      }
+    })
   } else if (targetId) {
     await prisma.user.update({ where: { id: targetId }, data: { isAdmin: makeAdmin } })
   }

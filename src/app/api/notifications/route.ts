@@ -33,13 +33,15 @@ export async function GET() {
   })
   const photoMap = Object.fromEntries(photos.map(p => [p.id, p]))
 
-  const enriched = notifications.map(n => ({
-    ...n,
-    actor: actorMap[n.actorId],
-    photo: n.photoId ? photoMap[n.photoId] : null
-  }))
+  const enriched = notifications
+    .map(n => ({
+      ...n,
+      actor: actorMap[n.actorId],
+      photo: n.photoId ? photoMap[n.photoId] : null
+    }))
+    .filter(n => n.actor) // Filter out notifications from deleted users
 
-  const unreadCount = notifications.filter(n => !n.read).length
+  const unreadCount = enriched.filter(n => !n.read).length
 
   return NextResponse.json({ notifications: enriched, unreadCount })
 }

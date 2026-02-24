@@ -10,7 +10,7 @@ interface Notification {
   type: 'like' | 'comment' | 'follow'
   read: boolean
   createdAt: string
-  actor: { username: string; name: string | null; avatar: string | null }
+  actor: { username: string; name: string | null; avatar: string | null } | null
   photo: { id: string; thumbnailPath: string } | null
 }
 
@@ -95,23 +95,23 @@ export default function NotificationBell() {
                 No notifications yet
               </div>
             ) : (
-              notifications.map(n => (
+              notifications.filter(n => n.actor).map(n => (
                 <Link
                   key={n.id}
-                  href={n.photo ? `/photos/${n.photo.id}` : `/${n.actor.username}`}
+                  href={n.photo ? `/photos/${n.photo.id}` : `/${n.actor!.username}`}
                   onClick={() => setOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 hover:bg-neutral-800 transition-colors ${!n.read ? 'bg-neutral-800/50' : ''}`}
                 >
                   <div className="w-8 h-8 bg-neutral-700 flex items-center justify-center text-xs font-bold overflow-hidden flex-shrink-0">
-                    {n.actor.avatar ? (
-                      <Image src={n.actor.avatar} alt="" width={32} height={32} className="w-full h-full object-cover" />
+                    {n.actor!.avatar ? (
+                      <Image src={n.actor!.avatar} alt="" width={32} height={32} className="w-full h-full object-cover" />
                     ) : (
-                      (n.actor.name || n.actor.username).charAt(0).toUpperCase()
+                      (n.actor!.name || n.actor!.username).charAt(0).toUpperCase()
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-white">
-                      <span className="font-medium">{n.actor.name || n.actor.username}</span>{' '}
+                      <span className="font-medium">{n.actor!.name || n.actor!.username}</span>{' '}
                       <span className="text-neutral-400">{getMessage(n)}</span>
                     </p>
                     <p className="text-xs text-neutral-600">

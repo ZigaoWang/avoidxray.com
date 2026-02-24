@@ -10,6 +10,7 @@ import AdminActions from './AdminActions'
 import BatchPhotoManager from './BatchPhotoManager'
 import MetadataManager from './MetadataManager'
 import CleanupButton from './CleanupButton'
+import OrphanCleanupButton from './OrphanCleanupButton'
 import OSSSyncButton from './OSSSyncButton'
 
 export default async function AdminPage() {
@@ -95,6 +96,7 @@ export default async function AdminPage() {
           {/* Storage Sync */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
             <OSSSyncButton />
+            <OrphanCleanupButton />
           </div>
 
           {/* Users */}
