@@ -6,6 +6,8 @@ import PhotoGrid from '@/components/PhotoGrid'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ExplorePage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
   const { tab = 'random' } = await searchParams
   const session = await getServerSession(authOptions)
@@ -25,16 +27,10 @@ export default async function ExplorePage({ searchParams }: { searchParams: Prom
     ...(tab === 'following' && userId ? { userId: { in: followingIds } } : {})
   }
 
-  // Random photos with seed for consistent ordering during pagination
+  // Random photos
   let photos
   if (tab === 'random') {
-    // Get total count first
-    const totalCount = await prisma.photo.count({ where })
-
-    // Generate random seed based on date (changes daily)
-    const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24))
-
-    // Use raw SQL for random ordering with seed for consistent results
+    // Use raw SQL with RANDOM() for true randomness each request
     photos = await prisma.$queryRaw`
       SELECT p.*,
              json_build_object('username', u.username) as user,
@@ -46,7 +42,7 @@ export default async function ExplorePage({ searchParams }: { searchParams: Prom
       LEFT JOIN "FilmStock" f ON p."filmStockId" = f.id
       LEFT JOIN "Camera" c ON p."cameraId" = c.id
       WHERE p.published = true
-      ORDER BY md5(p.id || ${seed})
+      ORDER BY RANDOM()
       LIMIT 21
     ` as any[]
 
