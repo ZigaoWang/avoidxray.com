@@ -6,6 +6,9 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import SuggestEditButton from '@/components/SuggestEditButton'
 
+// Force dynamic rendering so shuffle is different each request
+export const dynamic = 'force-dynamic'
+
 // Fisher-Yates shuffle with seed for consistent randomization per page load
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array]

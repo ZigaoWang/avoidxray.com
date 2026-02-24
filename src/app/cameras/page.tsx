@@ -1,17 +1,38 @@
 import { prisma } from '@/lib/db'
+import { Prisma } from '@prisma/client'
 import Link from 'next/link'
 import Image from 'next/image'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
+export const dynamic = 'force-dynamic'
+
 export default async function CamerasPage() {
   const cameras = await prisma.camera.findMany({
     include: {
-      photos: { where: { published: true }, take: 4 },
       _count: { select: { photos: { where: { published: true } } } }
     },
     orderBy: { name: 'asc' }
   })
+
+  // Get 4 random photos for each camera using raw SQL
+  const cameraIds = cameras.map(c => c.id)
+  const randomPhotos = cameraIds.length > 0 ? await prisma.$queryRaw<{ id: string; thumbnailPath: string; cameraId: string }[]>`
+    SELECT id, "thumbnailPath", "cameraId" FROM (
+      SELECT id, "thumbnailPath", "cameraId", ROW_NUMBER() OVER (PARTITION BY "cameraId" ORDER BY RANDOM()) as rn
+      FROM "Photo"
+      WHERE "cameraId" IN (${Prisma.join(cameraIds)}) AND published = true
+    ) p WHERE rn <= 4
+  ` : []
+
+  // Group photos by camera
+  const photosByCamera = new Map<string, typeof randomPhotos>()
+  for (const photo of randomPhotos) {
+    if (!photosByCamera.has(photo.cameraId)) {
+      photosByCamera.set(photo.cameraId, [])
+    }
+    photosByCamera.get(photo.cameraId)!.push(photo)
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex flex-col">
@@ -29,6 +50,7 @@ export default async function CamerasPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {cameras.map(camera => {
               const displayImage = camera.imageStatus === 'approved' ? camera.imageUrl : null
+              const photos = photosByCamera.get(camera.id) || []
               return (
                 <Link
                   key={camera.id}
@@ -37,12 +59,12 @@ export default async function CamerasPage() {
                 >
                   {/* Photo Grid */}
                   <div className="grid grid-cols-4 gap-px bg-neutral-800">
-                    {camera.photos.slice(0, 4).map(photo => (
+                    {photos.slice(0, 4).map(photo => (
                       <div key={photo.id} className="aspect-square relative bg-neutral-900">
                         <Image src={photo.thumbnailPath} alt="" fill className="object-cover" sizes="100px" />
                       </div>
                     ))}
-                    {Array.from({ length: Math.max(0, 4 - camera.photos.length) }).map((_, i) => (
+                    {Array.from({ length: Math.max(0, 4 - photos.length) }).map((_, i) => (
                       <div key={i} className="aspect-square bg-neutral-900" />
                     ))}
                   </div>
