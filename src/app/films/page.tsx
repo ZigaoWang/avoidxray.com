@@ -7,8 +7,8 @@ import Footer from '@/components/Footer'
 export default async function FilmsPage() {
   const filmStocks = await prisma.filmStock.findMany({
     include: {
-      photos: { take: 4, orderBy: { createdAt: 'desc' } },
-      _count: { select: { photos: true } }
+      photos: { where: { published: true }, take: 4 },
+      _count: { select: { photos: { where: { published: true } } } }
     },
     orderBy: { name: 'asc' }
   })
