@@ -118,32 +118,14 @@ export default async function MyAlbumsPage() {
                     </div>
 
                     {/* Info Section */}
-                    <div className="p-4 flex items-center gap-4">
-                      {/* Album Icon */}
-                      <div className="w-16 h-16 flex-shrink-0 flex items-center justify-center bg-neutral-800 rounded">
-                        <svg
-                          className="w-8 h-8 text-neutral-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={1.5}
-                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                          />
-                        </svg>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-bold group-hover:text-[#D32F2F] transition-colors truncate">
-                          {album.name}
-                        </h3>
-                        {album.description && (
-                          <p className="text-neutral-500 text-sm truncate">{album.description}</p>
-                        )}
-                        <p className="text-neutral-500 text-sm">{album._count.photos} photos</p>
-                      </div>
+                    <div className="p-4">
+                      <h3 className="text-lg font-bold group-hover:text-[#D32F2F] transition-colors truncate">
+                        {album.name}
+                      </h3>
+                      {album.description && (
+                        <p className="text-neutral-500 text-sm truncate mt-1">{album.description}</p>
+                      )}
+                      <p className="text-neutral-500 text-sm mt-1">{album._count.photos} photos</p>
                     </div>
                   </Link>
 
