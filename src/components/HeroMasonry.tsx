@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import { blurHashToDataURL } from '@/lib/blurhash'
 
@@ -33,42 +33,95 @@ type MasonryItem = PhotoItem | FilmItem | CameraItem
 
 interface HeroMasonryProps {
   items: MasonryItem[]
+  onReady?: () => void
 }
 
-export default function HeroMasonry({ items }: HeroMasonryProps) {
-  const [columnCount, setColumnCount] = useState(8)
+// Pre-calculate columns for different breakpoints on the server
+function calculateColumns(items: MasonryItem[], columnCount: number): MasonryItem[][] {
+  const cols: MasonryItem[][] = Array.from({ length: columnCount }, () => [])
+  const heights = Array(columnCount).fill(0)
 
-  useEffect(() => {
-    const updateColumns = () => {
-      if (window.innerWidth < 640) setColumnCount(4)
-      else if (window.innerWidth < 1024) setColumnCount(6)
-      else setColumnCount(8)
+  items.forEach(item => {
+    const shortestCol = heights.indexOf(Math.min(...heights))
+    cols[shortestCol].push(item)
+
+    if (item.type === 'photo') {
+      heights[shortestCol] += item.height / item.width
+    } else {
+      heights[shortestCol] += 0.75
     }
-    updateColumns()
-    window.addEventListener('resize', updateColumns)
-    return () => window.removeEventListener('resize', updateColumns)
+  })
+
+  return cols
+}
+
+export default function HeroMasonry({ items, onReady }: HeroMasonryProps) {
+  const [mounted, setMounted] = useState(false)
+  const [columnCount, setColumnCount] = useState(8)
+  const loadedCount = useRef(0)
+  const totalImages = useRef(0)
+  const readyCalled = useRef(false)
+
+  // Count total images that need to load
+  useEffect(() => {
+    totalImages.current = items.filter(item => {
+      if (item.type === 'photo') return true
+      if ((item.type === 'film' || item.type === 'camera') && item.imageUrl) return true
+      return false
+    }).length
+
+    // If no images, mark as ready immediately
+    if (totalImages.current === 0 && !readyCalled.current) {
+      readyCalled.current = true
+      onReady?.()
+    }
+  }, [items, onReady])
+
+  // Set column count immediately on mount (before paint)
+  useEffect(() => {
+    const getColumnCount = () => {
+      if (window.innerWidth < 640) return 4
+      if (window.innerWidth < 1024) return 6
+      return 8
+    }
+
+    setColumnCount(getColumnCount())
+    setMounted(true)
+
+    const handleResize = () => setColumnCount(getColumnCount())
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const columns = useMemo(() => {
-    const cols: MasonryItem[][] = Array.from({ length: columnCount }, () => [])
-    const heights = Array(columnCount).fill(0)
+  const handleImageLoad = useCallback(() => {
+    loadedCount.current++
+    // Trigger ready when 60% of images are loaded
+    if (loadedCount.current >= totalImages.current * 0.6 && !readyCalled.current) {
+      readyCalled.current = true
+      onReady?.()
+    }
+  }, [onReady])
 
-    items.forEach(item => {
-      const shortestCol = heights.indexOf(Math.min(...heights))
-      cols[shortestCol].push(item)
-
-      if (item.type === 'photo') {
-        heights[shortestCol] += item.height / item.width
-      } else {
-        // Compact height for film/camera
-        heights[shortestCol] += 0.75
+  // Fallback timeout
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (!readyCalled.current) {
+        readyCalled.current = true
+        onReady?.()
       }
-    })
+    }, 2500)
 
-    return cols
-  }, [items, columnCount])
+    return () => clearTimeout(timeout)
+  }, [onReady])
+
+  const columns = calculateColumns(items, columnCount)
 
   if (items.length === 0) return null
+
+  // Don't render until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return <div className="absolute inset-0 bg-neutral-900" />
+  }
 
   return (
     <div className="absolute inset-0 flex gap-[2px] overflow-hidden">
@@ -91,6 +144,7 @@ export default function HeroMasonry({ items }: HeroMasonryProps) {
                     sizes="12.5vw"
                     placeholder={item.blurHash ? 'blur' : 'empty'}
                     blurDataURL={blurHashToDataURL(item.blurHash)}
+                    onLoad={handleImageLoad}
                   />
                 </div>
               )
@@ -108,6 +162,7 @@ export default function HeroMasonry({ items }: HeroMasonryProps) {
                       fill
                       className="object-contain p-1"
                       sizes="12.5vw"
+                      onLoad={handleImageLoad}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -132,6 +187,7 @@ export default function HeroMasonry({ items }: HeroMasonryProps) {
                       fill
                       className="object-contain p-1"
                       sizes="12.5vw"
+                      onLoad={handleImageLoad}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
