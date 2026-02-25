@@ -4,12 +4,14 @@ import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import QuickLikeButton from './QuickLikeButton'
+import { blurHashToDataURL } from '@/lib/blurhash'
 
 interface Photo {
   id: string
   thumbnailPath: string
   width: number
   height: number
+  blurHash?: string | null
   liked?: boolean
   _count?: { likes: number }
 }
@@ -70,6 +72,8 @@ export default function MasonryGrid({ photos }: MasonryGridProps) {
                   height={Math.round(400 * (photo.height / photo.width))}
                   className="w-full block"
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  placeholder={photo.blurHash ? 'blur' : 'empty'}
+                  blurDataURL={blurHashToDataURL(photo.blurHash)}
                 />
                 <QuickLikeButton
                   photoId={photo.id}

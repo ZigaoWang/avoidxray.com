@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useEffect } from 'react'
 import Image from 'next/image'
+import { blurHashToDataURL } from '@/lib/blurhash'
 
 interface PhotoItem {
   type: 'photo'
@@ -9,6 +10,7 @@ interface PhotoItem {
   thumbnailPath: string
   width: number
   height: number
+  blurHash?: string | null
 }
 
 interface FilmItem {
@@ -87,6 +89,8 @@ export default function HeroMasonry({ items }: HeroMasonryProps) {
                     fill
                     className="object-cover"
                     sizes="12.5vw"
+                    placeholder={item.blurHash ? 'blur' : 'empty'}
+                    blurDataURL={blurHashToDataURL(item.blurHash)}
                   />
                 </div>
               )

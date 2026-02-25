@@ -45,6 +45,7 @@ model Photo {
   originalPath  String
   thumbnailPath String
   mediumPath    String
+  blurHash      String?
   width         Int
   height        Int
   caption       String?

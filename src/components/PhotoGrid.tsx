@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import QuickLikeButton from './QuickLikeButton'
+import { blurHashToDataURL } from '@/lib/blurhash'
 
 interface Photo {
   id: string
@@ -11,6 +12,7 @@ interface Photo {
   caption: string | null
   width: number
   height: number
+  blurHash?: string | null
   user: { username: string }
   filmStock: { name: string } | null
   camera: { name: string } | null
@@ -125,6 +127,8 @@ export default function PhotoGrid({ initialPhotos, initialOffset, tab }: PhotoGr
                     width={400}
                     height={Math.round(400 * (photo.height / photo.width))}
                     className="w-full block"
+                    placeholder={photo.blurHash ? 'blur' : 'empty'}
+                    blurDataURL={blurHashToDataURL(photo.blurHash)}
                   />
                   <QuickLikeButton
                     photoId={photo.id}

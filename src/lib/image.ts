@@ -1,4 +1,5 @@
 import sharp from 'sharp'
+import { encode } from 'blurhash'
 import { uploadToOSS } from './oss'
 
 export async function processImage(buffer: Buffer, id: string, originalExt: string = 'jpg') {
@@ -6,6 +7,15 @@ export async function processImage(buffer: Buffer, id: string, originalExt: stri
   const metadata = await sharp(rotatedBuffer).metadata()
   const width = metadata.width || 0
   const height = metadata.height || 0
+
+  // Generate blurhash from a small version of the image
+  const { data, info } = await sharp(rotatedBuffer)
+    .resize(32, 32, { fit: 'inside' })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+
+  const blurHash = encode(new Uint8ClampedArray(data), info.width, info.height, 4, 3)
 
   // Generate compressed versions in parallel
   const [mediumBuffer, thumbBuffer] = await Promise.all([
@@ -20,5 +30,5 @@ export async function processImage(buffer: Buffer, id: string, originalExt: stri
     uploadToOSS(thumbBuffer, `thumbs/${id}.webp`),
   ])
 
-  return { originalPath, mediumPath, thumbnailPath, width, height }
+  return { originalPath, mediumPath, thumbnailPath, width, height, blurHash }
 }

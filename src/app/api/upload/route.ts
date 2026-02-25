@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer())
     const id = randomUUID()
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg'
-    const { originalPath, mediumPath, thumbnailPath, width, height } = await processImage(buffer, id, ext)
+    const { originalPath, mediumPath, thumbnailPath, width, height, blurHash } = await processImage(buffer, id, ext)
 
     const photo = await prisma.photo.create({
       data: {
@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
         originalPath,
         mediumPath,
         thumbnailPath,
+        blurHash,
         width,
         height,
         caption,
