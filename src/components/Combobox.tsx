@@ -134,7 +134,7 @@ export default function Combobox({ options, value, onChange, placeholder, label,
       />
 
       {open && (
-        <div className="absolute z-10 w-full mt-1 bg-neutral-900 border border-neutral-800 max-h-64 overflow-auto">
+        <div className="absolute z-50 w-full mt-1 bg-neutral-900 border border-neutral-800 max-h-64 overflow-auto">
           {/* Add New option */}
           {onAddNewClick && (
             <button
