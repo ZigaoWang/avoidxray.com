@@ -28,11 +28,19 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   }
 
   const { id } = await params
-  const userId = (session.user as { id: string }).id
+  const currentUserId = (session.user as { id: string }).id
 
   const photo = await prisma.photo.findUnique({ where: { id } })
-  if (!photo || photo.userId !== userId) {
+  if (!photo) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
+  // Check permission: must be photo owner OR admin
+  if (photo.userId !== currentUserId) {
+    const currentUser = await prisma.user.findUnique({ where: { id: currentUserId } })
+    if (!currentUser?.isAdmin) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+    }
   }
 
   // Delete files from OSS
@@ -47,30 +55,66 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions)
-  if (!session?.user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const { id } = await params
-  const userId = (session.user as { id: string }).id
-  const { caption, cameraId, filmStockId, takenDate } = await req.json()
-
-  const photo = await prisma.photo.findUnique({ where: { id } })
-  if (!photo || photo.userId !== userId) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  }
-
-  const updated = await prisma.photo.update({
-    where: { id },
-    data: {
-      caption,
-      cameraId: cameraId || null,
-      filmStockId: filmStockId || null,
-      published: true,
-      takenDate: takenDate ? new Date(takenDate + 'T00:00:00Z') : null
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-  })
 
-  return NextResponse.json(updated)
+    const { id } = await params
+    const currentUserId = (session.user as { id: string }).id
+    const body = await req.json()
+    const { caption, cameraId, filmStockId, takenDate } = body
+
+    const photo = await prisma.photo.findUnique({ where: { id } })
+    if (!photo) {
+      return NextResponse.json({ error: 'Photo not found' }, { status: 404 })
+    }
+
+    // Check permission: must be photo owner OR admin
+    let isAdmin = false
+    if (photo.userId !== currentUserId) {
+      const currentUser = await prisma.user.findUnique({ where: { id: currentUserId } })
+      if (!currentUser?.isAdmin) {
+        return NextResponse.json({ error: 'Not authorized to edit this photo' }, { status: 403 })
+      }
+      isAdmin = true
+    }
+
+    // Validate camera exists if provided
+    if (cameraId) {
+      const camera = await prisma.camera.findUnique({ where: { id: cameraId } })
+      if (!camera) {
+        console.error(`[Photo PATCH] Camera not found: ${cameraId}`)
+        return NextResponse.json({ error: 'Camera not found' }, { status: 400 })
+      }
+    }
+
+    // Validate film stock exists if provided
+    if (filmStockId) {
+      const filmStock = await prisma.filmStock.findUnique({ where: { id: filmStockId } })
+      if (!filmStock) {
+        console.error(`[Photo PATCH] Film stock not found: ${filmStockId}`)
+        return NextResponse.json({ error: 'Film stock not found' }, { status: 400 })
+      }
+    }
+
+    const updated = await prisma.photo.update({
+      where: { id },
+      data: {
+        caption: caption !== undefined ? caption : photo.caption,
+        cameraId: cameraId !== undefined ? (cameraId || null) : photo.cameraId,
+        filmStockId: filmStockId !== undefined ? (filmStockId || null) : photo.filmStockId,
+        published: true,
+        takenDate: takenDate ? new Date(takenDate + 'T00:00:00Z') : photo.takenDate
+      }
+    })
+
+    console.log(`[Photo PATCH] Updated photo ${id}: cameraId=${updated.cameraId}, filmStockId=${updated.filmStockId}, published=${updated.published}${isAdmin ? ' (by admin)' : ''}`)
+
+    return NextResponse.json(updated)
+  } catch (error) {
+    console.error('[Photo PATCH] Error:', error)
+    return NextResponse.json({ error: 'Failed to update photo' }, { status: 500 })
+  }
 }
