@@ -17,6 +17,8 @@
     "bcryptjs": "^3.0.3",
     "blurhash": "^2.0.5",
     "canvas": "^3.2.1",
+    "heic-convert": "^2.1.0",
+    "heic2any": "^0.0.4",
     "next": "16.1.1",
     "next-auth": "^4.24.13",
     "node-vibrant": "^4.0.3",

@@ -1,9 +1,51 @@
 import sharp from 'sharp'
 import { encode } from 'blurhash'
 import { uploadToOSS } from './oss'
+import heicConvert from 'heic-convert'
+
+/**
+ * Convert HEIC/HEIF buffer to PNG buffer (lossless)
+ */
+async function convertHeicToPng(buffer: Buffer): Promise<Buffer> {
+  const outputBuffer = await heicConvert({
+    buffer: buffer,
+    format: 'PNG'
+  })
+  return Buffer.from(outputBuffer)
+}
+
+/**
+ * Check if buffer is HEIC/HEIF format by checking magic bytes
+ */
+function isHeicBuffer(buffer: Buffer): boolean {
+  // HEIC/HEIF files have 'ftyp' at offset 4 and contain 'heic', 'heix', 'hevc', 'hevx', 'mif1', or 'msf1'
+  if (buffer.length < 12) return false
+
+  const ftypMarker = buffer.toString('ascii', 4, 8)
+  if (ftypMarker !== 'ftyp') return false
+
+  const brand = buffer.toString('ascii', 8, 12).toLowerCase()
+  const heicBrands = ['heic', 'heix', 'hevc', 'hevx', 'mif1', 'msf1']
+  return heicBrands.some(b => brand.includes(b.substring(0, brand.length)))
+}
 
 export async function processImage(buffer: Buffer, id: string, originalExt: string = 'jpg') {
-  const rotatedBuffer = await sharp(buffer).rotate().toBuffer()
+  // Convert HEIC to PNG if needed (lossless conversion)
+  let processableBuffer = buffer
+  let actualExt = originalExt.toLowerCase()
+
+  if (actualExt === 'heic' || actualExt === 'heif' || isHeicBuffer(buffer)) {
+    try {
+      console.log(`[Image] Converting HEIC/HEIF to PNG (lossless) for ${id}`)
+      processableBuffer = await convertHeicToPng(buffer)
+      actualExt = 'png'
+    } catch (error) {
+      console.error(`[Image] Failed to convert HEIC/HEIF:`, error)
+      throw new Error('Failed to process HEIC/HEIF image. Please convert to JPEG or PNG before uploading.')
+    }
+  }
+
+  const rotatedBuffer = await sharp(processableBuffer).rotate().toBuffer()
   const metadata = await sharp(rotatedBuffer).metadata()
   const width = metadata.width || 0
   const height = metadata.height || 0
@@ -23,9 +65,9 @@ export async function processImage(buffer: Buffer, id: string, originalExt: stri
     sharp(rotatedBuffer).resize(800, 800, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 75 }).toBuffer(),
   ])
 
-  // Upload all in parallel (original as-is, others as webp)
+  // Upload all in parallel (original as lossless PNG if converted from HEIC, others as webp for display)
   const [originalPath, mediumPath, thumbnailPath] = await Promise.all([
-    uploadToOSS(buffer, `originals/${id}.${originalExt}`),
+    uploadToOSS(processableBuffer, `originals/${id}.${actualExt}`),
     uploadToOSS(mediumBuffer, `medium/${id}.webp`),
     uploadToOSS(thumbBuffer, `thumbs/${id}.webp`),
   ])
